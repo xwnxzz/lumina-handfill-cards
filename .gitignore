@@ -1,0 +1,19 @@
+# 测试产物
+.test-out/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# 导出的结果（避免误提交自己的测量数据）
+*.zip
+!tests/**/*.zip
+导出/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store

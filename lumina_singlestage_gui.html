@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>lumina studio 手填色卡</title>
+<link rel="icon" type="image/png" sizes="64x64" href="data:image/png;base64,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">
+<script>
+  /* 提前应用主题，避免首屏闪白（站点默认浅色） */
+  try {
+    var _m = localStorage.getItem("lumina-theme") || "light";
+    if (_m === "dark" || (_m === "system" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+      document.documentElement.classList.add("dark");
+    }
+  } catch (e) {}
+</script>
+<style>
+  /* 主题令牌 —— 取自 online.luminastudio.com.cn 的 index.css（变量名与取值一致） */
+  :root{
+    --surface-card: rgba(255,255,255,0.92);
+    --surface-card-outline: rgba(100,116,139,0.5);
+    --surface-well: rgba(100,116,139,0.09);
+    --surface-text-muted: rgb(100,116,139);
+    --shadow-card: 0 1px 2px rgba(15,23,42,0.05), 0 20px 44px -32px rgba(15,23,42,0.3);
+    --focus-ring: rgba(59,130,246,0.22);
+    --bg:#f1f5f9; --panel:var(--surface-card); --panel2:var(--surface-well);
+    --line:rgba(226,232,240,0.8); --tx:#0f172a; --tx2:var(--surface-text-muted);
+    --acc:#2563eb; --acc2:#3b82f6; --ok:#22c55e; --warn:#f59e0b; --err:#ef4444;
+    --field:#ffffff; --header-bg:rgba(241,245,249,0.5);
+  }
+  .dark{
+    --surface-card: rgba(15,23,42,0.88);
+    --surface-card-outline: rgba(148,163,184,0.38);
+    --surface-well: rgba(148,163,184,0.1);
+    --surface-text-muted: rgb(148,163,184);
+    --shadow-card: 0 1px 2px rgba(0,0,0,0.3), 0 20px 44px -32px rgba(0,0,0,0.6);
+    --focus-ring: rgba(96,165,250,0.24);
+    --bg:#020617; --line:rgba(30,41,59,0.8); --tx:#ffffff;
+    --field:#0b1220; --header-bg:rgba(15,23,42,0.5);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);
+       font:14px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+       transition:background-color 200ms ease,color 200ms ease}
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;
+         min-height:56px;padding:8px 16px;border-bottom:1px solid var(--line);
+         background:var(--header-bg)}
+  .brand{display:flex;align-items:center;gap:10px;min-width:0}
+  .brand .logo{height:40px;width:auto;flex:none;display:block}
+  h1{margin:0;font-size:15px;font-weight:600;
+     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  header p{margin:2px 0 0;color:var(--tx2);font-size:12px;
+     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  header > button{flex:none;white-space:nowrap}
+  main{padding:20px 16px 40px;max-width:1400px;margin:0 auto}
+
+  /* 顶部模式切换（与站点顶栏标签同风格） */
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .tab{padding:9px 18px;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;
+       border:1px solid var(--line);background:var(--panel);color:var(--tx2);
+       transition:all .18s ease}
+  .tab:hover{border-color:var(--acc);color:var(--acc)}
+  .tab.on{background:var(--acc);border-color:var(--acc);color:#fff}
+  .tab .sub{display:block;font-size:11px;font-weight:400;opacity:.85;margin-top:1px}
+
+  section{background:var(--panel);border:1px solid var(--surface-card-outline);
+          border-radius:24px;padding:20px;margin-bottom:16px;box-shadow:var(--shadow-card)}
+  h2{margin:0 0 4px;font-size:15px}
+  .hint{color:var(--tx2);font-size:12px;margin:0 0 12px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  button{background:var(--acc);color:#fff;border:0;border-radius:12px;
+         padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;
+         transition:background-color .18s ease,border-color .18s ease,color .18s ease}
+  button:hover{background:var(--acc2)}
+  button.sec{background:transparent;border:1px solid var(--line);color:var(--tx)}
+  button.sec:hover{border-color:var(--acc);color:var(--acc)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  input[type=file],select{color:var(--tx);font-size:12px}
+  select,input[type=number]{background:var(--field);border:1px solid var(--line);
+        border-radius:8px;padding:5px 6px}
+  select{font-size:13px;min-width:220px}
+  input[type=number]{width:100%;min-width:0;padding:4px 2px;font-size:12px;text-align:center}
+  button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:6px}
+select:focus-visible,input[type=number]:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+select:focus,input[type=number]:focus{outline:none;border-color:var(--acc);
+        box-shadow:0 0 0 4px var(--focus-ring)}
+  .status{font-size:12px;padding:10px 14px;border-radius:6px;margin-top:10px;
+        display:none;border-left:3px solid transparent}
+  .status.show{display:block}
+  .status.ok{background:rgba(34,197,94,0.12);border-left-color:var(--ok)}
+  .status.warn{background:rgba(245,158,11,0.14);border-left-color:var(--warn)}
+  .status.err{background:rgba(239,68,68,0.14);border-left-color:var(--err)}
+
+  /* ---- 梯度卡模式：18 格内联输入 ---- */
+  .boards{display:flex;flex-direction:column;gap:16px}
+  .board{min-width:0;width:100%}
+  .board h3{margin:0 0 8px;font-size:13px;font-weight:600}
+  .grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+  .cell{min-width:0;background:var(--panel2);border:1px solid var(--line);
+        border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:4px}
+  .cell .cap{font-size:10px;color:var(--tx2);display:flex;flex-wrap:wrap;gap:2px;
+        justify-content:space-between;line-height:1.3}
+  .cell .sw{height:16px;border-radius:4px;border:1px solid rgba(0,0,0,.35)}
+  .cell .rgb{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}
+
+  /* ---- 校准板模式：可点选的大网格 ---- */
+  .calwrap{overflow:auto;max-height:70vh;border:1px solid var(--line);
+        border-radius:12px;padding:8px;background:var(--panel2)}
+  .calgrid{display:grid;gap:2px;margin:0 auto}
+  .calsw{aspect-ratio:1/1;border-radius:3px;border:1px solid rgba(0,0,0,.28);
+        cursor:pointer;position:relative}
+  .calsw.filled{border-color:rgba(0,0,0,.45)}
+  .calsw.unused{opacity:.32;cursor:not-allowed;
+        background:repeating-linear-gradient(45deg,#94a3b8,#94a3b8 3px,#cbd5e1 3px,#cbd5e1 6px)}
+  .calsw.sel{outline:3px solid var(--acc);outline-offset:1px;z-index:2}
+  .editorrow{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-top:14px}
+  .editorrow label{font-size:12px;color:var(--tx2);display:flex;flex-direction:column;gap:4px}
+  .editorrow input[type=number]{width:74px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--tx2);margin-top:10px}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:4px;
+        vertical-align:-2px;border:1px solid rgba(0,0,0,.3)}
+
+  canvas{display:block;width:100%;height:auto;max-width:100%;
+        border:1px solid var(--line);border-radius:10px;background:#000}
+  code{background:var(--panel2);padding:1px 5px;border-radius:4px;font-size:12px}
+  table{border-collapse:collapse;font-size:12px;width:100%}
+  th,td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+  th{background:var(--panel2);color:var(--tx2);font-weight:600}
+  details{margin-top:10px}
+  summary{cursor:pointer;color:var(--tx2);font-size:12px}
+  .hidden{display:none !important}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <img class="logo" alt="Lumina Studio" src="data:image/png;base64,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">
+    <div style="min-width:0">
+      <h1>lumina studio 手填色卡</h1>
+      <p>自己测量色块 RGB，实时预览并导出板面图 · 全程离线</p>
+    </div>
+  </div>
+  <button class="sec" id="themeBtn">☀ 浅色</button>
+</header>
+
+<main>
+  <!-- 模式切换 -->
+  <div class="tabs" role="tablist" aria-label="模式切换">
+    <button class="tab on" id="tabGrad" role="tab" aria-selected="true" aria-controls="paneGrad">耗材管理 · 梯度卡填色
+      <span class="sub">3 × 6 = 18 格单阶板</span></button>
+    <button class="tab" id="tabCal" role="tab" aria-selected="false" aria-controls="paneCal">LUT管理 · 校准板填色
+      <span class="sub">适配全部颜色模式的校准板</span></button>
+  </div>
+
+  <!-- ==================== 梯度卡模式 ==================== -->
+  <div id="paneGrad" role="tabpanel" aria-labelledby="tabGrad">
+    <section>
+      <h2>① 输入每个色块的 RGB</h2>
+      <p class="hint">格子的排列与实物板<strong>完全一致</strong>：行优先、每行 6 格，层数已逐格标注。
+         <strong>裸基底格（0 层）固定在右上角</strong>——实物板是水平镜像的，所以第 1 行从左到右是 5→0 层。
+         <strong>请按每格标出的层数填，不要按自己的猜测顺序填。</strong></p>
+      <div class="row" style="margin-bottom:8px">
+        <label style="font-size:12px;color:var(--tx2)"
+               title="色差仪/色度计的 RGB 读数是 0–255 sRGB，不要勾。只有仪器直接输出线性光强（0–1）时才勾。">
+          <input type="checkbox" id="linInput"> 输入已是线性值 0–1（色差仪读数请勿勾选）
+        </label>
+      </div>
+      <div id="modeHint" class="hint" style="margin:0 0 12px"></div>
+      <div class="row" style="margin-bottom:12px">
+        <button class="sec" id="clearAll">全部清空</button>
+        <input type="file" id="csvIn" accept=".csv" style="font-size:12px" aria-label="导入测量 CSV">
+        <button class="sec" id="csvOut">导出测量 CSV</button>
+        <span class="hint" style="margin:0">（格式：<code>substrate,thickness_mm,r,g,b</code>）</span>
+        <span class="hint" style="margin:0" id="gradSaveState"></span>
+      </div>
+      <div class="boards">
+        <div class="board"><h3>白底板（substrate = white）</h3><div class="grid" id="gridWhite"></div></div>
+        <div class="board"><h3>黑底板（substrate = black）</h3><div class="grid" id="gridBlack"></div></div>
+      </div>
+      <div id="warnBox" class="status" role="status" aria-live="polite"></div>
+      <details><summary>板子规格（固定）</summary><div id="specView" style="margin-top:8px"></div></details>
+    </section>
+
+    <section>
+      <h2>② 预览将要生成的图</h2>
+      <p class="hint">每填一格，下方对应位置<strong>立刻上色</strong>；未填的格子显示为底色加斜纹（待测）。
+         图片尺寸 <strong>1340 × 680 px</strong>（= 67 × 34 mm @20 px/mm），图中只含色块。</p>
+      <div class="row" style="justify-content:space-between;align-items:baseline">
+        <span class="hint" style="margin:0"><strong>白底板</strong></span>
+        <span class="hint" style="margin:0" id="fillCount"></span>
+      </div>
+      <canvas id="prevWhite"></canvas>
+      <div class="hint" style="margin:12px 0 4px"><strong>黑底板</strong></div>
+      <canvas id="prevBlack"></canvas>
+    </section>
+
+    <section>
+      <h2>③ 导出图片</h2>
+      <p class="hint">「<strong>导出两张图片</strong>」会把白底板与黑底板打成<strong>一个 ZIP</strong>（内含
+         <code>白底板.png</code>、<code>黑底板.png</code>）；「只导出白底板 / 只导出黑底板」则直接下 PNG。
+         图片内容与预览完全一致（PNG，1340 × 680），不含清单或标注。</p>
+      <div class="row">
+        <button id="expBoth">导出两张图片（ZIP）</button>
+        <button class="sec" id="expWhite">只导出白底板</button>
+        <button class="sec" id="expBlack">只导出黑底板</button>
+      </div>
+      <div id="expInfo" class="status" role="status" aria-live="polite"></div>
+    </section>
+  </div>
+
+  <!-- ==================== 校准板模式 ==================== -->
+  <div id="paneCal" class="hidden" role="tabpanel" aria-labelledby="tabCal">
+    <section>
+      <h2>① 选择校准板</h2>
+      <p class="hint">与网站的「LUT管理 → 生成校准板」颜色模式一一对应。
+         网格与四角角标取自官方 <code>core/calibration.py</code>，不是估算。</p>
+      <div class="row" style="margin-bottom:10px">
+        <label style="font-size:12px;color:var(--tx2)">颜色模式
+          <select id="calMode" aria-label="颜色模式"></select>
+        </label>
+        <label style="font-size:12px;color:var(--tx2)" id="calPageWrap">页码
+          <select id="calPage" aria-label="页码"></select>
+        </label>
+      </div>
+      <div id="calInfo"></div>
+    </section>
+
+    <section>
+      <h2>② 填色</h2>
+      <p class="hint">校准板格子很多（1024–1369），所以这里是<strong>点选式</strong>：
+         先在下面的板面网格上点一个格子，再用右侧输入框填 RGB。可用键盘方向键移动选择。</p>
+      <p class="hint" style="margin-top:-6px">填的数据会<strong>自动保存在本机浏览器</strong>，刷新或重开都不丢。
+         也可以用 CSV 批量导入 / 导出，便于换电脑、留档或多人协作。</p>
+      <div class="editorrow">
+        <div id="calSelInfo" style="font-size:13px;font-weight:600;min-width:220px" role="status" aria-live="polite"></div>
+        <label>R<input type="number" id="calR" placeholder="R"></label>
+        <label>G<input type="number" id="calG" placeholder="G"></label>
+        <label>B<input type="number" id="calB" placeholder="B"></label>
+        <button class="sec" id="calClearCell">清除此格</button>
+        <button class="sec" id="calFillAll">用此色填满全部</button>
+        <button class="sec" id="calClearAll">全部清空</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <input type="file" id="calCsvIn" accept=".csv" style="font-size:12px">
+        <button class="sec" id="calCsvOutOne">导出当前页 CSV</button>
+        <button class="sec" id="calCsvOutAll">导出全部 CSV</button>
+        <label style="font-size:12px;color:var(--tx2)" title="勾选后，未填的格子也输出成空行，便于在 Excel 里看到完整网格布局">
+          <input type="checkbox" id="calCsvBlanks"> 含未填格
+        </label>
+        <button class="sec" id="calWipe">清空全部数据</button>
+        <span class="hint" style="margin:0" id="calSaveState"></span>
+      </div>
+      <div class="legend" id="calLegend"></div>
+      <div class="row" style="justify-content:space-between;align-items:baseline;margin-top:12px">
+        <span class="hint" style="margin:0">板面网格（点击选格；斜纹 = 未填）</span>
+        <span class="hint" style="margin:0" id="calCount"></span>
+      </div>
+      <div class="calwrap"><div class="calgrid" id="calGrid"></div></div>
+    </section>
+
+    <section>
+      <h2>③ 预览将要生成的图</h2>
+      <p class="hint">按物理网格绘制：外圈是板边（官方板为白色底），四角是固定的模式/页码角标，
+         中间是你要填的色块。未填的格子显示为斜纹。</p>
+      <canvas id="prevCal"></canvas>
+      <div class="status" id="calInfo2" role="status" aria-live="polite"></div>
+    </section>
+
+    <section>
+      <h2>④ 导出图片</h2>
+      <p class="hint">「导出当前页图片」直接下 PNG；「<strong>导出全部页图片</strong>」把该颜色模式的
+         <strong>所有页</strong>打包成<strong>一个 ZIP</strong>（多页模式为 2 张，单页模式为 1 张）。</p>
+      <div class="row">
+        <button id="calExpOne">导出当前页图片</button>
+        <button class="sec" id="calExpAll">导出全部页图片（ZIP）</button>
+      </div>
+      <div id="calExpInfo" class="status" role="status" aria-live="polite"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+"use strict";
+/* =========================================================================
+   0. 通用
+   ========================================================================= */
+const PX_PER_MM = 20;                 // 梯度卡：与官方 warp 目标一致
+const CAL_PX    = 20;                 // 校准板：每格像素
+const s2l = c => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+const l2s = c => (c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(Math.max(c,0), 1/2.4) - 0.055);
+function showStatus(id, kind, html) {
+  const el = document.getElementById(id);
+  el.className = "status show " + kind;
+  el.innerHTML = html;
+}
+function hideStatus(id){ document.getElementById(id).className = "status"; }
+/** 保存文件：优先走系统「另存为」对话框（File System Access API）直接写入。
+ *  为什么不用普通下载：本机把 file:// 页面的下载判为「受限站点(Zone=4)」，
+ *  附件管理器策略会阻止访问，下载下来的文件会「打不开」。
+ *  startIn:"downloads" 让对话框默认落在「下载」文件夹（系统默认是「文档」）。
+ *  不支持/被拒绝时自动回退到普通下载。 */
+let saving = false, exporting = false;   // 防重入标志
+async function saveBlob(blob, filename) {
+  if (saving) return "busy";             // 连点不会弹出两个对话框
+  saving = true;
+  try {
+    return await saveBlobInner(blob, filename);
+  } finally {
+    saving = false;
+  }
+}
+async function saveBlobInner(blob, filename) {
+  const ext = (filename.match(/\.[a-z0-9]+$/i) || [""])[0].toLowerCase();
+  const typeMap = { ".zip": "application/zip", ".png": "image/png", ".csv": "text/csv" };
+  if (window.showSaveFilePicker && typeMap[ext]) {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        startIn: "downloads",              // 默认打开「下载」，而不是「文档」
+        types: [{ description: ext === ".zip" ? "ZIP 压缩包" : ext === ".csv" ? "CSV 表格" : "PNG 图片",
+                  accept: { [typeMap[ext]]: [ext] } }]
+      });
+      const w = await handle.createWritable();
+      await w.write(blob);
+      await w.close();
+      return "picker";
+    } catch (e) {
+      if (e && e.name === "AbortError") return "cancel";   // 用户自己取消
+      /* 其它情况（不支持/权限被拒）→ 回退普通下载 */
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  return "download";
+}
+function downloadCanvas(canvas, filename, onDone) {
+  canvas.toBlob(async blob => {
+    const how = await saveBlob(blob, filename);
+    if (onDone) onDone(how);
+  }, "image/png");
+}
+/** 文件名用的时间戳：必须用【本地时间】。
+ *  之前用 toISOString() 得到的是 UTC，本机 UTC+8 会让文件名比实际早 8 小时（连日期都可能错一天）。 */
+function stamp() {
+  const d = new Date(), p = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}`
+       + `${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+}
+
+/* =========================================================================
+   1. 梯度卡模式（3×6 单阶板）
+   ========================================================================= */
+const GRAD_SPEC = {
+  grid_cols:6, grid_rows:3, block_mm:10.0, gap_mm:1.0, margin_mm:1.0,
+  pixel_mm:1.0, layer_height_mm:0.08, base_mm:1.0, max_step_layers:25,
+  step_layers:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,25], shrink_xy_mm:0.02
+};
+const SUBSTRATES = [ {id:"white", base:[255,255,255]}, {id:"black", base:[0,0,0]} ];
+let values = { white: [], black: [] };     // values[sub][i] = {r,g,b}
+
+function isLinear(){ return document.getElementById("linInput").checked; }
+function toDisp8(v){
+  if (v === null || v === undefined || v === "") return null;
+  return isLinear() ? Math.round(l2s(Math.min(Math.max(v,0),1)) * 255)
+                    : Math.round(Math.min(Math.max(v,0),255));
+}
+function toLinear(v){
+  if (v === null || v === undefined || v === "") return null;
+  return isLinear() ? Math.min(Math.max(v,0),1) : s2l(Math.min(Math.max(v,0),255)/255);
+}
+function stepLayers(){ return GRAD_SPEC.step_layers; }
+function thicknessOf(k){ return +(stepLayers()[k] * GRAD_SPEC.layer_height_mm).toFixed(4); }
+
+/* ------------------------------------------------------------------
+   实物板方向：裸基底（0 层）那一格固定在【右上角】。
+   规范网格是 row0col0 = 0 层、行优先、从左到右递增；而实物板是水平镜像的，
+   所以同一物理位置对应的层数要把列反过来。
+   依据：用户导出档案里官方检测到 flip_horizontal、corner_order [1,0,3,2]。
+   ------------------------------------------------------------------ */
+/** 屏幕上的物理格索引 i → 规范网格索引 k（k=0 即 0 层那一格） */
+function canonIndexFor(i) {
+  const C = GRAD_SPEC.grid_cols;
+  return Math.floor(i / C) * C + (C - 1 - (i % C));
+}
+/** 0 层那一格（裸基底）在屏幕上的物理索引 = 右上角 */
+function cornerIdx() { return GRAD_SPEC.grid_cols - 1; }
+/** 按「厚度从小到大」排列的物理索引（体检必须按厚度序，不能按屏幕序） */
+function canonOrderIdx() {
+  const n = GRAD_SPEC.grid_rows * GRAD_SPEC.grid_cols, arr = [];
+  for (let i = 0; i < n; i++) arr.push(i);
+  return arr.sort((a, b) => canonIndexFor(a) - canonIndexFor(b));
+}
+
+/** 梯度卡输入钳制：sRGB 模式夹到 0–255 整数，线性模式夹到 0–1；空/非法 → null */
+function clampGrad(raw) {
+  if (raw === "" || raw === null || raw === undefined) return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return null;
+  return isLinear() ? Math.max(0, Math.min(1, n))
+                    : Math.max(0, Math.min(255, Math.round(n)));
+}
+
+function buildGrids() {
+  const n = GRAD_SPEC.grid_rows * GRAD_SPEC.grid_cols;
+  for (const sub of ["white","black"]) {
+    const host = document.getElementById(sub === "white" ? "gridWhite" : "gridBlack");
+    host.innerHTML = "";
+    values[sub] = Array.from({length:n}, () => ({r:null,g:null,b:null}));
+    for (let i = 0; i < n; i++) {
+      const k = canonIndexFor(i);                 // 这一物理位置实际印的层数
+      const layers = stepLayers()[k];
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.innerHTML =
+        `<div class="cap"><span>#${i+1} · ${layers}层</span><span>${thicknessOf(k)}mm</span></div>
+         <div class="sw" data-sw></div>
+         <div class="rgb">
+           <input type="number" data-c="r" placeholder="R">
+           <input type="number" data-c="g" placeholder="G">
+           <input type="number" data-c="b" placeholder="B">
+         </div>`;
+      cell.querySelectorAll("input").forEach(inp => {
+        // 可访问名称：这 36 组输入框不在 <label> 内，只有 placeholder，读屏器读不出是 R/G/B
+        inp.setAttribute("aria-label",
+          `${sub === "white" ? "白底板" : "黑底板"} ${layers} 层 ${inp.dataset.c.toUpperCase()}`);
+        inp.addEventListener("input", () => {
+          values[sub][i][inp.dataset.c] = clampGrad(inp.value);
+          refreshCell(sub, i, cell);
+          scheduleRefresh();
+          gradPersist();
+        });
+        // 离开输入框时才把越界值写回显示（输入过程中不改写，免得打断连续输入）
+        inp.addEventListener("blur", () => {
+          const v = values[sub][i][inp.dataset.c];
+          inp.value = v === null ? "" : v;
+        });
+      });
+      host.appendChild(cell);
+    }
+  }
+  fillCornerDefaults();
+  syncInputMode();
+  refreshAll();
+}
+function refreshCell(sub, i, cell) {
+  const v = values[sub][i];
+  const sw = cell.querySelector("[data-sw]");
+  const d = [toDisp8(v.r), toDisp8(v.g), toDisp8(v.b)];
+  sw.style.background = d.every(x => x !== null) ? `rgb(${d[0]},${d[1]},${d[2]})`
+    : "repeating-linear-gradient(45deg,var(--line),var(--line) 4px,var(--panel2) 4px,var(--panel2) 8px)";
+}
+/* 0 层那一格（裸基底，即方向定位块）的默认底色：
+   白底板填白、黑底板填黑。逐通道只补空缺，不覆盖已填值。
+   位置由 direction 决定（默认右上角）。 */
+function fillCornerDefaults() {
+  const k = isLinear() ? 1 : 255, idx = cornerIdx();
+  for (const s of SUBSTRATES) {
+    const v = values[s.id][idx];
+    if (!v) continue;
+    const c = s.base[0] ? k : 0;          // 白基底 → k；黑基底 → 0
+    if (v.r === null) v.r = c;
+    if (v.g === null) v.g = c;
+    if (v.b === null) v.b = c;
+    document.querySelectorAll(
+      (s.id === "white" ? "#gridWhite" : "#gridBlack") + " .cell")[idx]
+      ?.querySelectorAll("input").forEach(inp => {
+        inp.value = v[inp.dataset.c];
+      });
+  }
+}
+function syncInputMode() {
+  const lin = isLinear();
+  document.querySelectorAll(".cell input[type=number]").forEach(inp => {
+    if (lin) { inp.min = "0"; inp.max = "1"; inp.step = "0.0001"; inp.placeholder = "0-1"; }
+    else { inp.min = "0"; inp.max = "255"; inp.step = "1";
+           inp.placeholder = (inp.dataset.c || "").toUpperCase(); }
+  });
+  const el = document.getElementById("modeHint");
+  if (el) el.innerHTML = lin
+    ? "当前：<strong>线性模式</strong> —— 请填 0–1 的线性光强（例如 0.216）。预览与导出的图片会自动转回 sRGB 显示。"
+    : "当前：<strong>sRGB 模式</strong>（默认）—— 色差仪/色度计的 RGB 读数就用这个，请填 0–255 的整数。";
+}
+function completeMatrix(sub) {
+  const arr = values[sub].map(v =>
+    (v.r === null || v.g === null || v.b === null) ? null : [v.r, v.g, v.b]);
+  return arr.every(Boolean) ? arr : null;
+}
+function sanity() {
+  const msgs = [];
+  for (const sub of ["white","black"]) {
+    const m = completeMatrix(sub);
+    if (!m) { msgs.push(`${sub} 底板还有未填的格子。`); continue; }
+    // 必须按「厚度从小到大」的顺序检查，不能按屏幕顺序：
+    // 实物板可能是镜像的，屏幕顺序下厚度是 5,4,3,2,1,0…，会误报「越厚越亮」
+    const lin = canonOrderIdx().map(i => [toLinear(m[i][0]), toLinear(m[i][1]), toLinear(m[i][2])]);
+    for (let c = 0; c < 3; c++) {
+      let up = 0;
+      for (let i = 1; i < lin.length; i++) if (lin[i][c] > lin[i-1][c] + 1e-6) up++;
+      if (up) msgs.push(`${sub} 底板 ${"RGB"[c]} 通道有 ${up} 处「越厚越亮」。`);
+    }
+  }
+  const w = completeMatrix("white"), b = completeMatrix("black");
+  if (w && b) {
+    const wl = w.map(r => r.map(toLinear)), bl = b.map(r => r.map(toLinear));
+    for (let c = 0; c < 3; c++) {
+      let bad = 0;
+      for (let i = 0; i < wl.length; i++) if (wl[i][c] < bl[i][c]) bad++;
+      if (bad) msgs.push(`${"RGB"[c]} 通道有 ${bad} 个样本白底比黑底还暗。`);
+    }
+    const z = cornerIdx();      // 0 层那一格的物理位置（由方向决定）
+    if (wl[z].reduce((a,x)=>a+x,0)/3 < 0.55)
+      msgs.push(`白底零厚度采样偏暗（亮度 ${(wl[z].reduce((a,x)=>a+x,0)/3).toFixed(3)} < 0.55），实测时应接近纯白。`);
+  }
+  return msgs;
+}
+function drawBoard(ctx, canvas, sub) {
+  const sp = GRAD_SPEC;
+  const W = (sp.margin_mm*2 + sp.grid_cols*sp.block_mm + (sp.grid_cols-1)*sp.gap_mm) * PX_PER_MM;
+  const H = (sp.margin_mm*2 + sp.grid_rows*sp.block_mm + (sp.grid_rows-1)*sp.gap_mm) * PX_PER_MM;
+  canvas.width = W; canvas.height = H;
+  const base = SUBSTRATES.find(s => s.id === sub).base;
+  ctx.fillStyle = `rgb(${base[0]},${base[1]},${base[2]})`;
+  ctx.fillRect(0, 0, W, H);
+  const n = sp.grid_cols * sp.grid_rows;
+  for (let i = 0; i < n; i++) {
+    const r = Math.floor(i / sp.grid_cols), c = i % sp.grid_cols;
+    const x = (sp.margin_mm + c*(sp.block_mm + sp.gap_mm)) * PX_PER_MM;
+    const y = (sp.margin_mm + r*(sp.block_mm + sp.gap_mm)) * PX_PER_MM;
+    const w = sp.block_mm * PX_PER_MM, h = sp.block_mm * PX_PER_MM;
+    const v = (values[sub] && values[sub][i]) || {};
+    const d = [toDisp8(v.r), toDisp8(v.g), toDisp8(v.b)];
+    if (d.every(x => x !== null)) {
+      ctx.fillStyle = `rgb(${d[0]},${d[1]},${d[2]})`;
+      ctx.fillRect(x, y, w, h);
+    } else {
+      ctx.fillStyle = `rgb(${base[0]},${base[1]},${base[2]})`;
+      ctx.fillRect(x, y, w, h);
+      const light = (base[0] + base[1] + base[2]) / 3 > 128;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+      ctx.strokeStyle = light ? "rgba(0,0,0,.22)" : "rgba(255,255,255,.22)";
+      ctx.lineWidth = 2;
+      for (let o = -h; o < w + h; o += 14) {
+        ctx.beginPath(); ctx.moveTo(x + o, y + h); ctx.lineTo(x + o + h, y); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.lineWidth = 1;
+    ctx.strokeRect(x + .5, y + .5, w - 1, h - 1);
+  }
+}
+/* =========================================================================
+   1b. 梯度卡持久化：36 个手测值自动存本机，刷新 / 重开不丢
+   存储格式（稀疏，只存有值的格）：
+     { v:1, lin:false, d:{ white:{ "5":[255,255,255] }, black:{ ... } } }
+   ========================================================================= */
+const GRAD_LS_KEY = "lumina-gradv1";
+let gradSaveTimer = null;
+
+function gradSerialize() {
+  const d = {};
+  for (const sub of ["white", "black"]) {
+    const sparse = {};
+    (values[sub] || []).forEach((v, i) => {
+      // 只要有一个通道填了就存（避免丢掉填了一半的格子），缺失通道保留 null
+      if (v && (v.r !== null || v.g !== null || v.b !== null)) sparse[i] = [v.r, v.g, v.b];
+    });
+    if (Object.keys(sparse).length) d[sub] = sparse;
+  }
+  return { v: 1, lin: isLinear(), d };
+}
+function gradSetSaveHint(text, isErr) {
+  const el = document.getElementById("gradSaveState");
+  if (!el) return;
+  el.textContent = text;
+  el.style.color = isErr ? "var(--err)" : "var(--tx2)";
+}
+function gradPersistNow() {
+  let failed = false;
+  try { localStorage.setItem(GRAD_LS_KEY, JSON.stringify(gradSerialize())); }
+  catch (e) { failed = true; }
+  if (failed) { gradSetSaveHint("⚠ 自动保存失败（浏览器存储不可用或已满）", true); return; }
+  const n = ["white","black"].reduce((a, s) =>
+    a + values[s].filter(v => v.r !== null && v.g !== null && v.b !== null).length, 0);
+  gradSetSaveHint(n ? `已自动保存 ${n} 格` : "已自动保存", false);
+}
+function gradPersist() {                       // 防抖：连续输入只在停手后写一次
+  if (gradSaveTimer) clearTimeout(gradSaveTimer);
+  gradSaveTimer = setTimeout(gradPersistNow, 600);
+}
+function gradRestore() {
+  let obj = null;
+  try { obj = JSON.parse(localStorage.getItem(GRAD_LS_KEY) || "null"); } catch (e) {}
+  if (!obj || !obj.d) return 0;
+  if (obj.lin) document.getElementById("linInput").checked = true;   // 先定模式，再还原数值
+  const n = stepLayers().length;
+  let total = 0;
+  for (const sub of ["white", "black"]) {
+    const src = obj.d[sub];
+    if (!src) continue;
+    const host = document.getElementById(sub === "white" ? "gridWhite" : "gridBlack");
+    for (const key of Object.keys(src)) {
+      const i = +key, v = src[key];
+      if (!(i >= 0 && i < n) || !Array.isArray(v) || v.length < 3) continue;
+      const cell = { r: v[0] === undefined ? null : v[0],
+                     g: v[1] === undefined ? null : v[1],
+                     b: v[2] === undefined ? null : v[2] };
+      if (cell.r === null && cell.g === null && cell.b === null) continue;
+      values[sub][i] = cell;
+      const el = host.children[i];
+      if (el) el.querySelectorAll("input").forEach(inp => { inp.value = cell[inp.dataset.c]; });
+      total++;
+    }
+  }
+  syncInputMode();
+  return total;
+}
+
+let refreshPending = null;                     // 梯度卡与校准板共用一个防抖槽（两者不同时可见）
+function scheduleRefresh(){
+  if (refreshPending) return;
+  refreshPending = setTimeout(() => { refreshPending = null; refreshAll(); }, 16);
+}
+function refreshAll() {
+  for (const sub of ["white","black"]) {
+    const host = document.getElementById(sub === "white" ? "gridWhite" : "gridBlack");
+    [...host.children].forEach((cell, i) => refreshCell(sub, i, cell));
+  }
+  drawBoard(document.getElementById("prevWhite").getContext("2d"),
+            document.getElementById("prevWhite"), "white");
+  drawBoard(document.getElementById("prevBlack").getContext("2d"),
+            document.getElementById("prevBlack"), "black");
+  const fc = document.getElementById("fillCount");
+  if (fc) {
+    const total = 2 * stepLayers().length;
+    const cnt = ["white","black"].reduce((a, s) =>
+      a + values[s].filter(v => v.r !== null && v.g !== null && v.b !== null).length, 0);
+    fc.textContent = `已填 ${cnt} / ${total} 格`;
+    fc.style.color = cnt === total ? "var(--ok)" : "";
+  }
+  const msgs = sanity();
+  const box = document.getElementById("warnBox");
+  if (msgs.length) {
+    box.className = "status show warn";
+    box.innerHTML = "体检提醒（不阻止导出，但建议先改测量）：<br>· " + msgs.join("<br>· ");
+  } else if (completeMatrix("white") && completeMatrix("black")) {
+    box.className = "status show ok";
+    box.textContent = "体检通过：序列单调、白底不暗于黑底、零厚度采样正常。";
+  } else box.className = "status";
+}
+function countUnfilled() {
+  return ["white","black"].reduce((a, s) =>
+    a + values[s].filter(v => v.r === null || v.g === null || v.b === null).length, 0);
+}
+/* ------------------------------------------------------------------
+   极简 ZIP 写入器（STORE 不压缩）：只用于把两张 PNG 打成一个 zip。
+   按标准写 CRC32、以及 UTF-8 文件名标记（0x0800），中文文件名才不会乱码。
+   ------------------------------------------------------------------ */
+const ZIP_CRC = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function zipCrc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = ZIP_CRC[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+const zipUtf8 = new TextEncoder();
+function zipBytes(entries) {                 // entries: [{name, data:Uint8Array}] -> Uint8Array
+  const parts = [], central = [];
+  let offset = 0, total = 0;
+  const d = new Date();
+  const dosTime = ((d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1)) & 0xFFFF;
+  const dosDate = (((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate()) & 0xFFFF;
+  for (const e of entries) {
+    const name = zipUtf8.encode(e.name), crc = zipCrc32(e.data), size = e.data.length;
+    const lh = new Uint8Array(30 + name.length), lv = new DataView(lh.buffer);
+    lv.setUint32(0, 0x04034b50, true); lv.setUint16(4, 20, true);
+    lv.setUint16(6, 0x0800, true); lv.setUint16(8, 0, true);      // STORE
+    lv.setUint16(10, dosTime, true); lv.setUint16(12, dosDate, true);
+    lv.setUint32(14, crc, true); lv.setUint32(18, size, true); lv.setUint32(22, size, true);
+    lv.setUint16(26, name.length, true); lv.setUint16(28, 0, true);
+    lh.set(name, 30);
+    parts.push(lh, e.data);
+    const ch = new Uint8Array(46 + name.length), cv = new DataView(ch.buffer);
+    cv.setUint32(0, 0x02014b50, true); cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0x0800, true); cv.setUint16(10, 0, true);
+    cv.setUint16(12, dosTime, true); cv.setUint16(14, dosDate, true);
+    cv.setUint32(16, crc, true); cv.setUint32(20, size, true); cv.setUint32(24, size, true);
+    cv.setUint16(28, name.length, true);
+    cv.setUint32(42, offset, true);
+    ch.set(name, 46);
+    central.push(ch);
+    offset += lh.length + size;
+  }
+  const cdSize = central.reduce((a, b) => a + b.length, 0);
+  const eocd = new Uint8Array(22), ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, entries.length, true); ev.setUint16(10, entries.length, true);
+  ev.setUint32(12, cdSize, true); ev.setUint32(16, offset, true);
+  total = offset + cdSize + 22;
+  const out = new Uint8Array(total);
+  let p = 0;
+  for (const part of [...parts, ...central, eocd]) { out.set(part, p); p += part.length; }
+  return out;
+}
+function zipStore(entries) {
+  return new Blob([zipBytes(entries)], { type: "application/zip" });
+}
+function canvasPngBytes(canvas) {
+  return new Promise(res => canvas.toBlob(async b =>
+    res(new Uint8Array(await b.arrayBuffer())), "image/png"));
+}
+
+function boardFileName(sub){ return sub === "white" ? "白底板.png" : "黑底板.png"; }
+function downloadBoard(sub, onDone) {
+  const canvas = document.getElementById(sub === "white" ? "prevWhite" : "prevBlack");
+  drawBoard(canvas.getContext("2d"), canvas, sub);
+  downloadCanvas(canvas, boardFileName(sub), onDone);
+}
+/** 「导出两张图片」：把两张板面图打成一个 ZIP（单张按钮仍是直接下 PNG） */
+async function exportBoardsZip() {
+  if (exporting) return;                 // 防重入：连点只导一次
+  exporting = true;
+  try {
+  const missing = countUnfilled();
+  const items = [];
+  for (const sub of ["white","black"]) {
+    const canvas = document.getElementById(sub === "white" ? "prevWhite" : "prevBlack");
+    drawBoard(canvas.getContext("2d"), canvas, sub);        // 确保导出的就是预览所见
+    items.push({ name: boardFileName(sub), data: await canvasPngBytes(canvas) });
+  }
+  const blob = zipStore(items);
+  const ts = stamp();
+  const fname = `lumina_手填色卡_${ts}.zip`;
+  const how = await saveBlob(blob, fname);
+  if (how === "busy") return;
+  if (how === "cancel") { showStatus("expInfo","warn","已取消保存。"); return; }
+  const tail = missing
+    ? `　其中 <strong>${missing} 格未填</strong>，在图中显示为斜纹。`
+    : "　全部 36 格已填。";
+  showStatus("expInfo", missing ? "warn" : "ok",
+    `已导出 <code>${fname}</code>（内含 <code>白底板.png</code>、<code>黑底板.png</code>，`
+    + `${items.reduce((a,x)=>a+x.data.length,0) / 1024 | 0} KB）。${tail}`);
+  } finally { exporting = false; }
+}
+function exportBoards(list) {
+  const missing = countUnfilled();
+  let done = 0;
+  list.forEach((sub, k) => {
+    setTimeout(() => downloadBoard(sub, how => {
+      if (how === "cancel" || how === "busy") return;   // 取消/重复点击，不报"已导出"
+      if (++done === list.length) {
+        const names = list.map(boardFileName);
+        const tail = missing
+          ? `　其中 <strong>${missing} 格未填</strong>，在图中显示为斜纹。`
+          : "　全部 36 格已填。";
+        showStatus("expInfo", missing ? "warn" : "ok",
+          `已导出 <code>${names.join("</code>、<code>")}</code>（PNG，1340 × 680）。${tail}`);
+      }
+    }), k * 350);
+  });
+}
+function renderGradSpec() {
+  const sp = GRAD_SPEC;
+  document.getElementById("specView").innerHTML = `<table>
+    <tr><th>网格</th><td>${sp.grid_rows} 行 × ${sp.grid_cols} 列（共 ${sp.grid_rows*sp.grid_cols} 格）</td></tr>
+    <tr><th>色块 / 间距 / 边距</th><td>${sp.block_mm} / ${sp.gap_mm} / ${sp.margin_mm} mm</td></tr>
+    <tr><th>层高</th><td>${sp.layer_height_mm} mm</td></tr>
+    <tr><th>底板</th><td>${sp.base_mm} mm</td></tr>
+    <tr><th>步进层数</th><td>${sp.step_layers.join(", ")}</td></tr>
+    <tr><th>对应厚度</th><td>${sp.step_layers.map(n => +(n*sp.layer_height_mm).toFixed(3)).join(", ")} mm</td></tr>
+    <tr><th>裸基底格（0 层）</th><td>第 6 格 · 右上角；实物板水平镜像，第 1 行层数为 5→0</td></tr>
+    <tr><th>图片尺寸</th><td>1340 × 680 px（67 × 34 mm @20 px/mm）</td></tr>
+  </table>`;
+}
+function buildGridsKeepValues() {
+  const snapshot = JSON.parse(JSON.stringify(values));
+  buildGrids();
+  for (const sub of ["white","black"]) {
+    const host = document.getElementById(sub === "white" ? "gridWhite" : "gridBlack");
+    snapshot[sub].forEach((v,i) => {
+      if (v.r === null) return;
+      values[sub][i] = v;
+      [...host.children[i].querySelectorAll("input")].forEach(inp => inp.value = v[inp.dataset.c]);
+    });
+  }
+}
+/** 解析梯度卡测量 CSV 并写入 values；返回 {n, skipped}。
+ *  逐行判断表头：没有表头的文件也能导入（旧实现无条件 slice(1)，会静默丢掉第一条测量）。 */
+function gradImportCsv(txt) {
+  const idx = { white:{}, black:{} };
+  // CSV 是按「厚度」索引的，要换算到屏幕上的物理格位置（方向会影响对应关系）
+  const inv = {}, total = GRAD_SPEC.grid_rows * GRAD_SPEC.grid_cols;
+  for (let i = 0; i < total; i++) inv[canonIndexFor(i)] = i;
+  stepLayers().forEach((layers, k) => {
+    const t = +(layers * GRAD_SPEC.layer_height_mm).toFixed(4);
+    idx.white[t] = inv[k]; idx.black[t] = inv[k];
+  });
+  let n = 0, skipped = 0;
+  for (const raw of txt.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    const p = line.split(",").map(s => s.trim());
+    if (p.length < 5) continue;
+    const sub = p[0].toLowerCase();
+    if (sub !== "white" && sub !== "black") { skipped++; continue; }   // 表头 / 其它内容
+    const i = idx[sub]?.[+p[1]];
+    if (i === undefined) { skipped++; continue; }
+    if (p[2] === "" && p[3] === "" && p[4] === "") continue;           // 整行留空 = 未填
+    let r = clampGrad(p[2]), g = clampGrad(p[3]), b = clampGrad(p[4]);
+    if (isLinear()) {                                                  // CSV 里是 0–255，需换算
+      const cv = x => x === null ? null : +s2l(x / 255).toFixed(4);
+      r = cv(r); g = cv(g); b = cv(b);
+    }
+    values[sub][i] = { r, g, b }; n++;
+  }
+  return { n, skipped };
+}
+document.getElementById("csvIn").addEventListener("change", async ev => {
+  const f = ev.target.files[0]; if (!f) return;
+  let txt = "";
+  try { txt = await f.text(); }
+  catch (e) { showStatus("expInfo","err","读取文件失败：" + e.message); return; }
+  ev.target.value = "";
+  const res = gradImportCsv(txt);
+  buildGridsKeepValues(); syncInputMode(); refreshAll(); gradPersistNow();
+  showStatus("expInfo", res.n ? "ok" : "warn",
+    res.n ? `已从 CSV 导入 ${res.n} 个色块。`
+            + (res.skipped ? `（跳过 ${res.skipped} 行表头/无法识别的行）` : "")
+          : "CSV 里没有可用的行（需要 <code>substrate,thickness_mm,r,g,b</code>）。");
+});
+/** 「导出测量 CSV」：格式与导入、以及 lumina_profile_writer.py 完全一致 */
+function gradCsvText() {
+  let out = "# lumina studio 手填色卡 · 梯度卡测量数据\n";
+  out += `# 输入模式,${isLinear() ? "线性 0-1" : "sRGB 0-255"}\n`;
+  out += "# 列：substrate,thickness_mm,r,g,b；未填的格子留空\n";
+  out += "substrate,thickness_mm,r,g,b\n";
+  // 按【厚度从小到大】输出，与实物板方向无关，方便对照
+  for (const sub of ["white", "black"])
+    for (const i of canonOrderIdx()) {
+      const v = values[sub][i] || {};
+      out += `${sub},${thicknessOf(canonIndexFor(i))},`
+           + `${v.r ?? ""},${v.g ?? ""},${v.b ?? ""}\n`;
+    }
+  return out;
+}
+document.getElementById("csvOut").addEventListener("click", async () => {
+  const filled = ["white","black"].reduce((a, s) =>
+    a + values[s].filter(v => v.r !== null || v.g !== null || v.b !== null).length, 0);
+  if (!filled) { showStatus("expInfo","warn","还没有任何已填数据，无可导出。"); return; }
+  const nm = `梯度卡_测量数据_${stamp()}.csv`;
+  const how = await saveBlob(new Blob([gradCsvText()], { type: "text/csv;charset=utf-8" }), nm);
+  if (how === "busy") return;
+  if (how === "cancel") { showStatus("expInfo","warn","已取消保存。"); return; }
+  showStatus("expInfo","ok",
+    `已导出 <code>${nm}</code>：含 ${filled} 个已填色块（未填的格子留空）。`);
+});
+document.getElementById("clearAll").addEventListener("click", () => {
+  const filled = ["white","black"].reduce((a, s) =>
+    a + values[s].filter(v => v.r !== null || v.g !== null || v.b !== null).length, 0);
+  if (filled && !confirm(
+      `确定清空梯度卡的全部已填数据？\n共 ${filled} 格，此操作不可撤销。\n（可先点「导出测量 CSV」留档）`)) return;
+  for (const sub of ["white","black"]) values[sub] = stepLayers().map(() => ({r:null,g:null,b:null}));
+  buildGridsKeepValues(); syncInputMode(); refreshAll();
+  gradPersistNow();
+});
+document.getElementById("expBoth").addEventListener("click", () => exportBoardsZip());
+document.getElementById("expWhite").addEventListener("click", () => exportBoards(["white"]));
+document.getElementById("expBlack").addEventListener("click", () => exportBoards(["black"]));
+document.getElementById("linInput").addEventListener("change", () => {
+  const lin = isLinear();
+  for (const sub of ["white","black"]) {
+    values[sub] = values[sub].map(v => {
+      if (v.r === null || v.r === undefined) return v;
+      const f = x => lin
+        ? +s2l(Math.min(Math.max(x,0),255)/255).toFixed(4)
+        : Math.round(l2s(Math.min(Math.max(x,0),1)) * 255);
+      return { r:f(v.r), g:f(v.g), b:f(v.b) };
+    });
+  }
+  buildGridsKeepValues(); syncInputMode(); refreshAll();
+});
+
+/* =========================================================================
+   2. 校准板模式
+   几何与四角角标全部取自官方 Lumina-Layers / core/calibration.py：
+     BW           data 6  pad 1 -> 8x8   32 格（前 32）
+     4C CMYW      32/1 -> 34x34  1024
+     4C RYBW      32/1 -> 34x34  1024
+     5C Ext P1    32/1 -> 34x34  1024
+     5C Ext P2    38/1 -> 40x40  1444
+     6C           36/1 -> 38x38  1296
+     8C Max P1/P2 37/1 -> 39x39  1369 x2
+   角标： [行,列,槽位]，行/列 0 或 -1（-1 = total-1）
+   ========================================================================= */
+const SLOT_COLORS = {
+  BW:    [[255,255,255],[0,0,0]],
+  CMYW:  [[255,255,255],[0,255,255],[255,0,255],[255,255,0]],
+  RYBW:  [[255,255,255],[220,20,60],[255,230,0],[0,100,240]],
+  C5EXT: [[255,255,255],[220,20,60],[255,230,0],[0,100,240],[20,20,20]],
+  C6:    [[255,255,255],[0,255,255],[255,0,255],[0,174,66],[255,255,0],[0,0,0]],
+  C8:    [[255,255,255],[0,255,255],[255,0,255],[255,255,0],[0,0,0],[193,46,31],[10,41,137],[0,174,66]]
+};
+const CAL_MODES = [
+  { key:"BW", label:"BW (Black & White)", slots:"BW", block:5.0, gap:0.8,
+    pages:[{ data:6,  pad:1, cells:32,   corners:[[0,0,0],[0,-1,1],[-1,-1,1],[-1,0,1]] }] },
+  { key:"CMYW", label:"4-Color (CMYW)", slots:"CMYW", block:5.0, gap:0.8,
+    pages:[{ data:32, pad:1, cells:1024, corners:[[0,0,0],[0,-1,1],[-1,-1,2],[-1,0,3]] }] },
+  { key:"RYBW", label:"4-Color (RYBW)", slots:"RYBW", block:5.0, gap:0.8,
+    pages:[{ data:32, pad:1, cells:1024, corners:[[0,0,0],[0,-1,1],[-1,-1,3],[-1,0,2]] }] },
+  { key:"C5EXT", label:"5-Color Extended (1444)", slots:"C5EXT", block:5.0, gap:0.8,
+    pages:[
+      { data:32, pad:1, cells:1024, corners:[[0,0,0],[0,-1,1],[-1,-1,3],[-1,0,2]] },
+      { data:38, pad:1, cells:1444, corners:[[0,0,3],[0,-1,1],[-1,-1,4],[-1,0,2]] }] },
+  { key:"C6", label:"6-Color (CMYWGK 1296)", slots:"C6", block:5.0, gap:0.8,
+    pages:[{ data:36, pad:1, cells:1296, corners:[[0,0,0],[0,-1,1],[-1,-1,2],[-1,0,4]] }] },
+  { key:"C6R", label:"6-Color (RYBWGK 1296)", slots:"C6", block:5.0, gap:0.8,
+    note:"板面几何与 CMYWGK 相同（官方同一块板），只是耗材命名不同。",
+    pages:[{ data:36, pad:1, cells:1296, corners:[[0,0,0],[0,-1,1],[-1,-1,2],[-1,0,4]] }] },
+  { key:"C8", label:"8-Color Max", slots:"C8", block:5.0, gap:0.8,
+    pages:[
+      { data:37, pad:1, cells:1369, corners:[[0,0,0],[0,-1,1],[-1,-1,5],[-1,0,4]] },
+      { data:37, pad:1, cells:1369, corners:[[0,0,0],[0,-1,2],[-1,-1,5],[-1,0,4]] }] }
+];
+const cal       = { modeKey:"BW", page:0, sel:0 };
+const calStore  = {};                       // "MODE#page" -> [ {r,g,b}|null ]
+function calMode(){ return CAL_MODES.find(m => m.key === cal.modeKey) || CAL_MODES[0]; }
+function calPageDef(){ const m = calMode(); return m.pages[Math.min(cal.page, m.pages.length-1)]; }
+function calKey(){ return cal.modeKey + "#" + cal.page; }
+function calData(){
+  const k = calKey();
+  if (!calStore[k]) calStore[k] = new Array(calPageDef().cells).fill(null);
+  return calStore[k];
+}
+function calFillModeSelect(){
+  const sel = document.getElementById("calMode");
+  sel.innerHTML = CAL_MODES.map(m =>
+    `<option value="${m.key}">${m.label}</option>`).join("");
+  sel.value = cal.modeKey;
+}
+function calFillPageSelect(){
+  const m = calMode(), sel = document.getElementById("calPage");
+  const wrap = document.getElementById("calPageWrap");
+  if (m.pages.length > 1) {
+    wrap.style.display = "";
+    sel.innerHTML = m.pages.map((p,i) => `<option value="${i}">第 ${i+1} 页（${p.cells} 格）</option>`).join("");
+    sel.value = String(Math.min(cal.page, m.pages.length-1));
+  } else {
+    wrap.style.display = "none";
+  }
+}
+function calUpdateInfo(){
+  const m = calMode(), p = calPageDef(), total = p.data + 2*p.pad;
+  const mm = total * m.block + (total - 1) * m.gap;
+  document.getElementById("calInfo").innerHTML = `<table>
+    <tr><th>颜色模式</th><td>${m.label}${m.note ? "　（" + m.note + "）" : ""}</td></tr>
+    <tr><th>数据网格</th><td>${p.data} × ${p.data} = <strong>${p.cells}</strong> 格${p.cells !== p.data*p.data ? "（前 " + p.cells + " 个）" : ""}</td></tr>
+    <tr><th>物理网格</th><td>${total} × ${total}（含 1 格边框）</td></tr>
+    <tr><th>色块 / 间距</th><td>${m.block} / ${m.gap} mm</td></tr>
+    <tr><th>板面尺寸</th><td>≈ ${mm.toFixed(1)} × ${mm.toFixed(1)} mm</td></tr>
+    <tr><th>料槽</th><td>${SLOT_COLORS[m.slots].map((c,i) =>
+        `<span style="display:inline-block;width:11px;height:11px;border-radius:3px;
+         background:rgb(${c[0]},${c[1]},${c[2]});border:1px solid rgba(0,0,0,.3);
+         vertical-align:-1px;margin-right:3px"></span>${i}`).join(" ")}</td></tr>
+    <tr><th>四角角标</th><td>${p.corners.map(([r,c,s],i) =>
+        ["左上","右上","右下","左下"][i] + "=" + s).join("　")}</td></tr>
+  </table>`;
+}
+function calBuildGrid(){
+  const p = calPageDef(), host = document.getElementById("calGrid");
+  const usedData = p.cells;                       // BW: 32 < 36
+  host.style.gridTemplateColumns = `repeat(${p.data}, 1fr)`;
+  // 单元格最大宽度：让整板适配容器（32 列约 34px，37 列约 30px）
+  host.style.maxWidth = Math.min(1500, p.data * 42) + "px";
+  let html = "";
+  for (let i = 0; i < p.data * p.data; i++) {
+    const used = i < usedData;
+    const d = used ? calData()[i] : null;
+    const style = d ? `background:rgb(${d.r},${d.g},${d.b})` : "";
+    html += `<div class="calsw${used ? "" : " unused"}${d ? " filled" : ""}${i === cal.sel && used ? " sel" : ""}"
+              data-i="${i}" data-used="${used ? 1 : 0}" title="序号 ${i}｜行 ${Math.floor(i/p.data)} 列 ${i%p.data}"
+              style="${style}"></div>`;
+  }
+  host.innerHTML = html;
+  calUpdateCount();
+}
+function calUpdateCount(){
+  const p = calPageDef();
+  const filled = calData().filter(Boolean).length;
+  const el = document.getElementById("calCount");
+  if (el) {
+    el.textContent = `已填 ${filled} / ${p.cells} 格`;
+    el.style.color = filled === p.cells ? "var(--ok)" : "";
+  }
+}
+function calRefreshSwatch(i){
+  const el = document.querySelector(`.calsw[data-i="${i}"]`);
+  if (!el) return;
+  const d = calData()[i];
+  el.style.background = d ? `rgb(${d.r},${d.g},${d.b})` : "";
+  el.classList.toggle("filled", !!d);
+}
+function calSelect(i){
+  const p = calPageDef();
+  if (i < 0 || i >= p.cells) return;
+  document.querySelectorAll(".calsw.sel").forEach(e => e.classList.remove("sel"));
+  cal.sel = i;
+  const el = document.querySelector(`.calsw[data-i="${i}"]`);
+  if (el) { el.classList.add("sel"); el.scrollIntoView({block:"nearest"}); }
+  calUpdateEditor();
+}
+function calUpdateEditor(){
+  const p = calPageDef(), d = calData()[cal.sel] || {r:null,g:null,b:null};
+  document.getElementById("calSelInfo").innerHTML =
+    `序号 <strong>${cal.sel}</strong>　行 ${Math.floor(cal.sel/p.data)}　列 ${cal.sel % p.data}` +
+    (d.r === null ? "　<span style='color:var(--tx2);font-weight:400'>未填</span>" : "");
+  document.getElementById("calR").value = d.r === null ? "" : d.r;
+  document.getElementById("calG").value = d.g === null ? "" : d.g;
+  document.getElementById("calB").value = d.b === null ? "" : d.b;
+}
+function calSetSelected(){
+  const r = document.getElementById("calR").value;
+  const g = document.getElementById("calG").value;
+  const b = document.getElementById("calB").value;
+  // 顺手做范围钳制：输入 999 / -5 这类非法值会被夹到 0–255，避免存进档案与本地存储
+  calData()[cal.sel] = (r === "" && g === "" && b === "")
+    ? null
+    : { r: clamp8(r), g: clamp8(g), b: clamp8(b) };
+  calRefreshSwatch(cal.sel);
+  calUpdateCount();
+  calUpdateEditor();
+  calDrawPreview();
+  calPersist();
+}
+function calDrawPreview(target){
+  const m = calMode(), p = calPageDef();
+  const canvas = target || document.getElementById("prevCal");
+  const total = p.data + 2*p.pad;
+  const W = total * CAL_PX, H = total * CAL_PX;
+  canvas.width = W; canvas.height = H;
+  if (!target) canvas.style.maxWidth = W + "px";    // 小尺寸板面（如 BW）不要被放大糊掉
+  const ctx = canvas.getContext("2d");
+  // 板边：官方板未使用区域填 0 号槽（8 色/6 色为白，BW 为白）
+  const ring = SLOT_COLORS[m.slots][0];
+  ctx.fillStyle = `rgb(${ring[0]},${ring[1]},${ring[2]})`;
+  ctx.fillRect(0, 0, W, H);
+  // 数据格
+  for (let i = 0; i < p.cells; i++) {
+    const r = Math.floor(i / p.data) + p.pad, c = (i % p.data) + p.pad;
+    const x = c * CAL_PX, y = r * CAL_PX;
+    const d = calData()[i];
+    if (d) {
+      ctx.fillStyle = `rgb(${d.r},${d.g},${d.b})`;
+      ctx.fillRect(x, y, CAL_PX, CAL_PX);
+    } else {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x, y, CAL_PX, CAL_PX); ctx.clip();
+      ctx.strokeStyle = "rgba(0,0,0,.3)"; ctx.lineWidth = 2;
+      for (let o = -CAL_PX; o < CAL_PX*2; o += 7) {
+        ctx.beginPath(); ctx.moveTo(x + o, y + CAL_PX); ctx.lineTo(x + o + CAL_PX, y); ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+  // 四角角标（官方固定标记：用于识别模式 / 页码）
+  for (const [r, c, s] of p.corners) {
+    const rr = r < 0 ? total - 1 : r, cc = c < 0 ? total - 1 : c;
+    const col = SLOT_COLORS[m.slots][s];
+    ctx.fillStyle = `rgb(${col[0]},${col[1]},${col[2]})`;
+    ctx.fillRect(cc * CAL_PX, rr * CAL_PX, CAL_PX, CAL_PX);
+    ctx.strokeStyle = "rgba(0,0,0,.55)"; ctx.lineWidth = 2;
+    ctx.strokeRect(cc * CAL_PX + 1, rr * CAL_PX + 1, CAL_PX - 2, CAL_PX - 2);
+  }
+  // 网格线
+  ctx.strokeStyle = "rgba(0,0,0,.18)"; ctx.lineWidth = 1;
+  for (let k = 0; k <= total; k++) {
+    ctx.beginPath(); ctx.moveTo(k*CAL_PX + .5, 0); ctx.lineTo(k*CAL_PX + .5, H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, k*CAL_PX + .5); ctx.lineTo(W, k*CAL_PX + .5); ctx.stroke();
+  }
+}
+function calReload(){
+  calFillPageSelect();
+  calUpdateInfo();
+  // 保留当前选中位置（换页/刷新时不要跳回第 0 格），越界则钳制
+  cal.sel = Math.min(Math.max(0, cal.sel | 0), calPageDef().cells - 1);
+  calBuildGrid();
+  calUpdateEditor();
+  calDrawPreview();
+  calBuildLegend();
+  hideStatus("calExpInfo");
+  calPersist();
+}
+function calBuildLegend(){
+  const m = calMode(), p = calPageDef();
+  const names = ["左上","右上","右下","左下"];
+  document.getElementById("calLegend").innerHTML =
+    `<span>料槽色：</span>` +
+    SLOT_COLORS[m.slots].map((c,i) =>
+      `<span><i style="background:rgb(${c[0]},${c[1]},${c[2]})"></i>${i}</span>`).join("") +
+    `<span style="margin-left:8px">四角角标：` +
+    p.corners.map(([r,c,s],i) => `${names[i]}=槽${s}`).join("　") +
+    `</span><span style="margin-left:8px">斜纹 = 未填</span>`;
+}
+
+/* =========================================================================
+   2b. 持久化：填的数据自动存 localStorage，刷新/重开不丢
+   存储格式（只在有数据时写入，稀疏）：
+     { v:1, mode:"C8", page:0, sel:74, d:{ "C8#0": { "0":[255,255,0], ... } } }
+   ========================================================================= */
+const CAL_LS_KEY = "lumina-calv1";
+let calSaveTimer = null, calSaveFailed = false;
+
+function calSerialize() {
+  const d = {};
+  for (const key of Object.keys(calStore)) {
+    const arr = calStore[key], sparse = {};
+    for (let i = 0; i < arr.length; i++) {
+      const v = arr[i];
+      if (v) sparse[i] = [v.r, v.g, v.b];
+    }
+    if (Object.keys(sparse).length) d[key] = sparse;
+  }
+  return { v: 1, mode: cal.modeKey, page: cal.page, sel: cal.sel, d };
+}
+function calSetSaveHint(text, isErr) {
+  const el = document.getElementById("calSaveState");
+  if (!el) return;
+  el.textContent = text;
+  el.style.color = isErr ? "var(--err)" : "var(--tx2)";
+}
+function calPersistNow() {
+  try {
+    localStorage.setItem(CAL_LS_KEY, JSON.stringify(calSerialize()));
+    calSaveFailed = false;
+  } catch (e) {
+    calSaveFailed = true;                 // 隐私模式 / 配额满 / 存储被禁用
+  }
+  if (calSaveFailed) calSetSaveHint("⚠ 自动保存失败（浏览器存储不可用或已满）", true);
+  else {
+    const cells = ["white","black"] && Object.keys(calStore)
+      .reduce((a,k) => a + calStore[k].filter(Boolean).length, 0);
+    calSetSaveHint(cells ? `已自动保存 ${cells} 格` : "已自动保存", false);
+  }
+}
+function calPersist() {                    // 防抖：连续点选只在停手后写一次
+  if (calSaveTimer) clearTimeout(calSaveTimer);
+  calSaveTimer = setTimeout(calPersistNow, 600);
+}
+function calRestore() {
+  let obj = null;
+  try { obj = JSON.parse(localStorage.getItem(CAL_LS_KEY) || "null"); } catch (e) {}
+  if (!obj || !obj.d) return 0;
+  let total = 0;
+  for (const key of Object.keys(obj.d)) {
+    const parts = key.split("#");
+    const mode = CAL_MODES.find(m => m.key === parts[0]);
+    if (!mode) continue;                                   // 模式已改名 → 丢弃该段
+    const page = Math.min(Math.max(0, +parts[1] || 0), mode.pages.length - 1);
+    const cells = mode.pages[page].cells;
+    const arr = new Array(cells).fill(null);
+    for (const i of Object.keys(obj.d[key])) {
+      const idx = +i, v = obj.d[key][i];
+      if (idx >= 0 && idx < cells && Array.isArray(v) && v.length >= 3)
+        arr[idx] = { r: clamp8(v[0]), g: clamp8(v[1]), b: clamp8(v[2]) };
+    }
+    calStore[mode.key + "#" + page] = arr;
+    total += arr.filter(Boolean).length;
+  }
+  if (CAL_MODES.some(m => m.key === obj.mode)) cal.modeKey = obj.mode;
+  cal.page = Math.min(Math.max(0, obj.page | 0), calMode().pages.length - 1);
+  cal.sel  = Math.max(0, obj.sel | 0);
+  return total;
+}
+
+/* =========================================================================
+   2c. CSV 导入 / 导出（导出格式可直接再导入）
+   段落以 # mode,<模式名> / # page,<页码> 标记；数据列 index,row,col,r,g,b
+   同时兼容 index,r,g,b 与 row,col,r,g,b 三种写法
+   ========================================================================= */
+function clamp8(v){ return Math.max(0, Math.min(255, Math.round(Number(v) || 0))); }
+
+function calCsvKeys(all) {
+  if (!all) return [calKey()];
+  const keys = [];
+  for (const mode of CAL_MODES)
+    for (let p = 0; p < mode.pages.length; p++) {
+      const k = mode.key + "#" + p, arr = calStore[k];
+      if (arr && arr.some(Boolean)) keys.push(k);          // 只导出有数据的板块
+    }
+  return keys;
+}
+function calCsvText(keys, includeBlanks) {
+  let out = "# lumina studio 手填色卡 · 校准板测量数据\n";
+  out += "# 列：index,row,col,r,g,b（r,g,b 为 0-255 整数）\n";
+  out += "# 导入时按 # mode / # page 段落自动对应；"
+       + (includeBlanks ? "未填的格子输出为空行（RGB 留空，导入时会跳过）。\n"
+                        : "未填的格子不导出。\n");
+  let total = 0;
+  for (const key of keys) {
+    const parts = key.split("#");
+    const mode = CAL_MODES.find(m => m.key === parts[0]);
+    if (!mode) continue;
+    const page = Math.min(Math.max(0, +parts[1] || 0), mode.pages.length - 1);
+    const pdef = mode.pages[page], arr = calStore[key] || [];
+    out += `\n# mode,${mode.label}\n# page,${page + 1}\n# cells,${pdef.cells}\n`;
+    out += "index,row,col,r,g,b\n";
+    for (let i = 0; i < pdef.cells; i++) {
+      const d = arr[i], rc = `${i},${Math.floor(i / pdef.data)},${i % pdef.data}`;
+      if (!d) {
+        if (includeBlanks) out += `${rc},,,\n`;      // 留空行，便于在 Excel 里看完整网格
+        continue;
+      }
+      out += `${rc},${d.r},${d.g},${d.b}\n`;
+      total++;
+    }
+  }
+  return { text: out, count: total };
+}
+function calDownloadText(name, text) {
+  return saveBlob(new Blob([text], { type: "text/csv;charset=utf-8" }), name);
+}
+async function calCsvExport(all) {
+  const keys = calCsvKeys(all);
+  if (!keys.length) {
+    showStatus("calExpInfo","warn", all ? "还没有任何已填数据，无可导出。"
+                                        : "当前页还没有已填数据，无可导出。");
+    return;
+  }
+  const blanks = !!(document.getElementById("calCsvBlanks") || {}).checked;
+  const r = calCsvText(keys, blanks);
+  const nm = all ? "校准板_手填色卡_全部.csv"
+                 : `校准板_${calMode().label.replace(/[\\/:*?"<>|]/g,"_")}_第${cal.page+1}页.csv`;
+  const how = await calDownloadText(nm, r.text);
+  if (how === "busy") return;
+  if (how === "cancel") { showStatus("calExpInfo","warn","已取消保存。"); return; }
+  showStatus("calExpInfo","ok",
+    `已导出 <code>${nm}</code>：${keys.length} 个板块、共 <strong>${r.count}</strong> 个色块`
+    + (blanks ? "（另含未填格的空行，便于在 Excel 里看完整网格）。" : "。"));
+}
+function calCsvImport(text) {
+  const sections = [];
+  let cur = null;
+  const ensure = modeVal => {
+    let mode = null;
+    if (modeVal) {
+      const t = String(modeVal).trim().toLowerCase();
+      mode = CAL_MODES.find(m => m.key.toLowerCase() === t || m.label.toLowerCase() === t);
+    }
+    if (!mode) mode = calMode();                 // 未声明段落就用当前选择
+    cur = { modeKey: mode.key, page: 0, rows: [] };
+    sections.push(cur);
+  };
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) continue;
+    if (line[0] === "#") {                       // 段落标记
+      const parts = line.replace(/^#\s*/, "").split(",");
+      const k = (parts[0] || "").trim().toLowerCase();
+      const v = (parts[1] || "").trim();
+      if (k === "mode") ensure(v);
+      else if (k === "page" && cur) cur.page = Math.max(0, (parseInt(v, 10) || 1) - 1);
+      continue;
+    }
+    const p = line.split(",").map(s => s.trim());
+    if (p.length < 4) continue;
+    if (!/^\d+$/.test(p[0])) continue;           // 跳过表头 / 非数字行
+    if (!cur) ensure(null);
+    const mode = CAL_MODES.find(m => m.key === cur.modeKey);
+    const page = Math.min(Math.max(0, cur.page), mode.pages.length - 1);
+    const pdef = mode.pages[page];
+    let idx, r, g, b;
+    if (p.length >= 6)       { idx = +p[0]; r = p[3]; g = p[4]; b = p[5]; }
+    else if (p.length === 5) { idx = (+p[0]) * pdef.data + (+p[1]); r = p[2]; g = p[3]; b = p[4]; }
+    else                     { idx = +p[0]; r = p[1]; g = p[2]; b = p[3]; }
+    if (!Number.isFinite(idx) || idx < 0 || idx >= pdef.cells) continue;
+    // 整行 RGB 都为空 = 「含未填格」导出的空行 → 必须跳过。
+    // 否则 clamp8("") 会得到 0，把空格子错误地填成黑色（导出含空格再导入就会踩到）
+    if (String(r).trim() === "" && String(g).trim() === "" && String(b).trim() === "") continue;
+    cur.rows.push({ page, index: idx, r: clamp8(r), g: clamp8(g), b: clamp8(b) });
+  }
+
+  let total = 0, boards = 0, first = null;
+  for (const s of sections) {
+    if (!s.rows.length) continue;
+    const byPage = {};
+    for (const row of s.rows) (byPage[row.page] = byPage[row.page] || []).push(row);
+    for (const pg of Object.keys(byPage)) {
+      const mode = CAL_MODES.find(m => m.key === s.modeKey);
+      const cells = mode.pages[+pg].cells;
+      const key = s.modeKey + "#" + pg;
+      if (!calStore[key]) calStore[key] = new Array(cells).fill(null);
+      for (const row of byPage[pg]) calStore[key][row.index] = { r: row.r, g: row.g, b: row.b };
+      total += byPage[pg].length; boards++;
+      if (!first) first = { modeKey: s.modeKey, page: +pg };
+    }
+  }
+  // 跳到第一个导入的板块，让用户直接看到结果
+  if (first && (first.modeKey !== cal.modeKey || first.page !== cal.page)) {
+    cal.modeKey = first.modeKey;
+    cal.page = first.page;
+    document.getElementById("calMode").value = first.modeKey;
+  }
+  return { total, boards };
+}
+
+document.getElementById("calMode").addEventListener("change", e => {
+  cal.modeKey = e.target.value; cal.page = 0; cal.sel = 0; calReload();
+});
+document.getElementById("calPage").addEventListener("change", e => {
+  cal.page = Number(e.target.value); calReload();
+});
+document.getElementById("calGrid").addEventListener("click", e => {
+  const el = e.target.closest(".calsw");
+  if (!el || el.dataset.used !== "1") return;
+  calSelect(Number(el.dataset.i));
+});
+/* 方向键移动选择（在输入框/下拉里打字时不抢键） */
+document.addEventListener("keydown", e => {
+  if (uiMode !== "cal") return;
+  const tag = (e.target && e.target.tagName || "").toLowerCase();
+  if (tag === "input" || tag === "select" || tag === "textarea") return;
+  const keys = ["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"];
+  if (keys.indexOf(e.key) < 0) return;
+  const p = calPageDef();
+  const r = Math.floor(cal.sel / p.data), c = cal.sel % p.data;
+  let nr = r, nc = c;
+  if (e.key === "ArrowUp")    nr = Math.max(0, r - 1);
+  if (e.key === "ArrowDown")  nr = Math.min(p.data - 1, r + 1);
+  if (e.key === "ArrowLeft")  nc = Math.max(0, c - 1);
+  if (e.key === "ArrowRight") nc = Math.min(p.data - 1, c + 1);
+  e.preventDefault();
+  const ni = nr * p.data + nc;
+  if (ni < p.cells) calSelect(ni);      // BW 的行尾有未使用格，跳过
+});
+["calR","calG","calB"].forEach(id =>
+  document.getElementById(id).addEventListener("input", calSetSelected));
+document.getElementById("calClearCell").addEventListener("click", () => {
+  calData()[cal.sel] = null;
+  calRefreshSwatch(cal.sel); calUpdateCount(); calUpdateEditor(); calDrawPreview(); calPersist();
+});
+document.getElementById("calFillAll").addEventListener("click", () => {
+  const r = document.getElementById("calR").value, g = document.getElementById("calG").value,
+        b = document.getElementById("calB").value;
+  if (r === "" || g === "" || b === "") {
+    showStatus("calExpInfo","err","请先在 R/G/B 里填一个颜色，再用它填满全部。"); return;
+  }
+  const p = calPageDef();
+  calStore[calKey()] = new Array(p.cells).fill({ r:Number(r), g:Number(g), b:Number(b) });
+  calBuildGrid(); calUpdateEditor(); calDrawPreview(); calPersist();
+  showStatus("calExpInfo","ok",`已用 rgb(${r},${g},${b}) 填满全部 ${p.cells} 格。`);
+});
+document.getElementById("calClearAll").addEventListener("click", () => {
+  const p = calPageDef();
+  const filled = (calStore[calKey()] || []).filter(Boolean).length;
+  if (filled && !confirm(
+      `确定清空当前这一页的全部已填数据？\n共 ${filled} 格（${calMode().label} 第 ${cal.page + 1} 页），此操作不可撤销。\n`
+      + `（可先点「导出当前页 CSV」留档）`)) return;
+  calStore[calKey()] = new Array(p.cells).fill(null);
+  calBuildGrid(); calUpdateEditor(); calDrawPreview(); calPersist();
+  hideStatus("calExpInfo");
+});
+
+/* CSV 导入 / 导出 / 清空全部 */
+document.getElementById("calCsvOutOne").addEventListener("click", () => calCsvExport(false));
+document.getElementById("calCsvOutAll").addEventListener("click", () => calCsvExport(true));
+document.getElementById("calCsvIn").addEventListener("change", async ev => {
+  const f = ev.target.files[0];
+  if (!f) return;
+  let txt = "";
+  try { txt = await f.text(); }
+  catch (e) { showStatus("calExpInfo","err","读取文件失败：" + e.message); return; }
+  ev.target.value = "";
+  const r = calCsvImport(txt);
+  if (!r.total) {
+    showStatus("calExpInfo","err",
+      "没有解析到可用的数据行。请使用本工具「导出当前页 CSV」得到的格式（含 <code>index,row,col,r,g,b</code>）。");
+    return;
+  }
+  calFillPageSelect();
+  calUpdateInfo();
+  calBuildGrid();
+  calUpdateEditor();
+  calDrawPreview();
+  calBuildLegend();
+  calPersistNow();
+  showStatus("calExpInfo","ok",
+    `已导入 ${r.boards} 个板块、共 <strong>${r.total}</strong> 个色块，并已自动保存到本机。`);
+});
+document.getElementById("calWipe").addEventListener("click", () => {
+  if (!confirm("确定清空全部模式、全部页面的已填数据？此操作不可撤销。\n（建议先「导出全部 CSV」留档）")) return;
+  for (const k of Object.keys(calStore)) delete calStore[k];
+  try { localStorage.removeItem(CAL_LS_KEY); } catch (e) {}
+  cal.sel = 0;
+  calReload();
+  calSetSaveHint("已清空", false);
+  showStatus("calExpInfo","ok","已清空全部已填数据。");
+});
+/* 离开页面前把防抖中的改动落盘，避免丢最后一笔（两个模式都要） */
+function flushPendingSaves() {
+  if (calSaveTimer) { clearTimeout(calSaveTimer); calSaveTimer = null; calPersistNow(); }
+  if (gradSaveTimer) { clearTimeout(gradSaveTimer); gradSaveTimer = null; gradPersistNow(); }
+}
+window.addEventListener("beforeunload", flushPendingSaves);
+document.addEventListener("visibilitychange", () => { if (document.hidden) flushPendingSaves(); });
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && calSaveTimer) { clearTimeout(calSaveTimer); calSaveTimer = null; calPersistNow(); }
+});
+document.getElementById("calExpOne").addEventListener("click", () => {
+  const m = calMode();
+  const nm = `校准板_${m.label.replace(/[\\/:*?"<>|]/g,"_")}` +
+             (m.pages.length > 1 ? `_第${cal.page+1}页` : "") + ".png";
+  calDrawPreview();
+  downloadCanvas(document.getElementById("prevCal"), nm, how => {
+    if (how === "busy") return;
+    if (how === "cancel") { showStatus("calExpInfo","warn","已取消保存。"); return; }
+    const p = calPageDef(), filled = calData().filter(Boolean).length;
+    const miss = p.cells - filled;
+    showStatus("calExpInfo", miss ? "warn" : "ok",
+      `已导出 <code>${nm}</code>（${p.data + 2*p.pad} × ${p.data + 2*p.pad} 格，${(p.data+2*p.pad)*CAL_PX} × ${(p.data+2*p.pad)*CAL_PX} px）。`
+      + (miss ? `　其中 <strong>${miss} 格未填</strong>，显示为斜纹。` : "　全部已填。"));
+  });
+});
+/** 「导出全部页图片」：把该模式所有页的板面图打成一个 ZIP */
+document.getElementById("calExpAll").addEventListener("click", () => exportCalAllZip());
+async function exportCalAllZip() {
+  if (exporting) return;                              // 防重入：连点只导一次
+  exporting = true;
+  try {
+  const m = calMode();
+  const safe = m.label.replace(/[\\/:*?"<>|]/g, "_");
+  const restore = cal.page;
+  const off = document.createElement("canvas");       // 离屏绘制，可见预览不会来回翻页闪动
+  const items = [];
+  let missing = 0;
+  try {
+    for (let idx = 0; idx < m.pages.length; idx++) {
+      cal.page = idx;
+      calDrawPreview(off);
+      const arr = calStore[m.key + "#" + idx] || [];
+      missing += m.pages[idx].cells - arr.filter(Boolean).length;
+      const nm = `校准板_${safe}` + (m.pages.length > 1 ? `_第${idx+1}页` : "") + ".png";
+      items.push({ name: nm, data: await canvasPngBytes(off) });
+    }
+  } catch (e) {
+    cal.page = restore; calDrawPreview();
+    showStatus("calExpInfo","err","导出失败：" + e.message);
+    return;
+  }
+  cal.page = restore;                                 // 可见预览全程未动，恢复页码即可
+  calPersist();
+  const blob = zipStore(items);
+  const ts = stamp();
+  const fname = `校准板_${safe}_全部页_${ts}.zip`;
+  const how = await saveBlob(blob, fname);
+  if (how === "busy") return;
+  if (how === "cancel") { showStatus("calExpInfo","warn","已取消保存。"); return; }
+  const kb = (items.reduce((a, x) => a + x.data.length, 0) / 1024).toFixed(0);
+  showStatus("calExpInfo", missing ? "warn" : "ok",
+    `已导出 <code>${fname}</code>：内含 <code>${items.map(i => i.name).join("</code>、<code>")}</code>`
+    + `（共 ${items.length} 张，${kb} KB）。`
+    + (missing ? `　其中 <strong>${missing} 格未填</strong>，显示为斜纹。` : "　全部已填。"));
+  } finally { exporting = false; }
+}
+
+/* =========================================================================
+   3. 模式切换 + 主题
+   ========================================================================= */
+let uiMode = "grad";
+function setUiMode(m) {
+  uiMode = m;
+  document.getElementById("paneGrad").classList.toggle("hidden", m !== "grad");
+  document.getElementById("paneCal").classList.toggle("hidden", m !== "cal");
+  document.getElementById("tabGrad").classList.toggle("on", m === "grad");
+  document.getElementById("tabCal").classList.toggle("on", m === "cal");
+  document.getElementById("tabGrad").setAttribute("aria-selected", m === "grad");
+  document.getElementById("tabCal").setAttribute("aria-selected", m === "cal");
+  if (m === "grad") refreshAll(); else calReload();
+}
+document.getElementById("tabGrad").addEventListener("click", () => setUiMode("grad"));
+document.getElementById("tabCal").addEventListener("click", () => setUiMode("cal"));
+
+const THEMES = ["light", "dark", "system"];
+const THEME_LABEL = { light: "☀ 浅色", dark: "☾ 深色", system: "◐ 跟随系统" };
+let themeMode = (() => {
+  try { return localStorage.getItem("lumina-theme") || "light"; } catch (e) { return "light"; }
+})();
+function applyTheme(mode) {
+  const dark = mode === "dark" ||
+    (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.classList.toggle("dark", dark);
+  document.getElementById("themeBtn").textContent = THEME_LABEL[mode];
+  try { localStorage.setItem("lumina-theme", mode); } catch (e) {}
+}
+applyTheme(themeMode);
+function setTheme(mode) {
+  applyTheme(mode);
+  if (uiMode === "grad") refreshAll(); else calDrawPreview();
+}
+document.getElementById("themeBtn").addEventListener("click", () => {
+  themeMode = THEMES[(THEMES.indexOf(themeMode) + 1) % THEMES.length];
+  setTheme(themeMode);
+});
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+  if (themeMode === "system") setTheme("system");
+});
+
+/* 启动 */
+buildGrids();
+// 恢复梯度卡数据：必须在 buildGrids 之后（DOM 就绪才能回填输入框）
+const gradRestoredCells = gradRestore();
+gradSetSaveHint(gradRestoredCells ? `已恢复 ${gradRestoredCells} 格` : "", false);
+renderGradSpec();
+// 再恢复校准板数据：必须在 calFillModeSelect 之前，
+// 否则模式下拉会显示默认项、与实际恢复的数据不一致
+const calRestoredCells = calRestore();
+calFillModeSelect();
+calReload();
+calSetSaveHint(calRestoredCells ? `已恢复 ${calRestoredCells} 格` : "", false);
+</script>
+</body>
+</html>
