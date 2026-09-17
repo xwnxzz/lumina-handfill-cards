@@ -100,6 +100,9 @@ python tools/lumina_profile_writer.py --brand "品牌" --name "耗材名" \
 ## 目录结构
 
 ```
+LICENSE                       代码许可（MIT）
+CONTENT-LICENSE.md            内容许可（CC BY-NC-SA 4.0）
+NOTICE.md                     第三方来源、逐篇署名与 AI 辅助说明
 lumina_singlestage_gui.html   主工具（单文件，离线）
 tools/
   lumina_profile_writer.py    离线拟合脚本
@@ -188,4 +191,20 @@ C(t) = E + (C0 − E) · exp(−k · t)        t 单位 mm，逐 RGB 通道
 
 ## 许可
 
-尚未指定。若要公开，建议补一个 `LICENSE`（例如 MIT）。
+与本项目参考的 [Lumina Studio Wiki](https://github.com/lumina-layer-studio/Lumina-Studio-Wiki)
+一致，采用**代码与内容分开许可**：
+
+| 范围 | 许可 | 文件 |
+|---|---|---|
+| 源代码：`lumina_singlestage_gui.html`、`tools/`、`tests/` | **MIT** | [`LICENSE`](LICENSE) |
+| 文档与文字内容：`README.md`、`docs/`、`data/测量模板.csv` | **CC BY-NC-SA 4.0** | [`CONTENT-LICENSE.md`](CONTENT-LICENSE.md) |
+| 第三方来源、逐篇署名、AI 辅助说明 | — | [`NOTICE.md`](NOTICE.md) |
+
+请注意 **CC BY-NC-SA 4.0 禁止商业性使用**，且改编内容需继续以相同许可发布。
+
+`docs/` 中改编自 Lumina Studio Wiki 的文档已按该许可的要求逐篇署名
+（来源链接 + 许可 + 修改说明），见 [`NOTICE.md`](NOTICE.md)。
+
+> **AI 辅助说明**：本仓库的文档由 AI 协助撰写（依据用户自己导出的档案包、官方公开文档与
+> 公开仓库整理），并已与用户实际打印的官方套件逐项核对。沿用 Lumina Studio Wiki 的
+> 披露惯例，特此说明。软件持续更新，内容可能存在疏漏，欢迎提 Issue 或 PR。
