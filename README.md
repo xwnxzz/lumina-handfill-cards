@@ -1,7 +1,13 @@
 # lumina studio 手填色卡
 
-手工测量色块 RGB、离线生成 Lumina Studio 板面图的单文件工具。
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Content: CC BY-NC-SA 4.0](https://img.shields.io/badge/Content-CC%20BY--NC--SA%204.0-lightgrey.svg)](CONTENT-LICENSE.md)
+[![Release](https://img.shields.io/github/v/release/xwnxzz/lumina-handfill-cards?label=release&color=blue)](https://github.com/xwnxzz/lumina-handfill-cards/releases/latest)
+[![Tests](https://img.shields.io/badge/tests-62%20passing-brightgreen.svg)](#测试)
+[![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](#隐私)
+[![Offline](https://img.shields.io/badge/offline-100%25-brightgreen.svg)](#隐私)
 
+手工测量色块 RGB、离线生成 Lumina Studio 板面图的单文件工具。
 把色差仪 / 色度计的读数（或从照片取样的数值）填进网格，工具会**实时预览并导出可直接使用的板面图**，
 不依赖网络、不上传任何数据。适用于没有条件用官方「拍照提取」流程、或想自己控制每个色块数值的场景。
 
@@ -133,6 +139,9 @@ node tests/calzip_test.cjs
 node tests/zip2_test.cjs
 ```
 
+> 顶部那个「tests 62 passing」徽章是**本地实测结果**，目前还没有 CI，所以它**不会自动更新**。
+> 加上 GitHub Actions 之后会换成实时徽章。
+
 这些测试把主工具里的**真实代码抽出来**在隔离沙箱里跑（不是复制一份来测），
 覆盖：时间戳、持久化往返、输入钳制、CSV 导入导出往返（含无表头文件）、ZIP 结构与命名、
 存储不可用时的降级、未知模式的安全性。
@@ -171,6 +180,9 @@ C(t) = E + (C0 − E) · exp(−k · t)        t 单位 mm，逐 RGB 通道
 - 全部计算在浏览器本地完成，**不联网、不上传、无遥测**
 - 无外部字体 / CDN / 统计脚本
 - 测量数据只存在你自己的浏览器里，删除即消失
+
+> 唯一的外部请求来自 **README 顶部的徽章图片**（由 GitHub 页面渲染时加载 `img.shields.io`）。
+> 那只是给仓库页面看的，**工具本体一个外部请求都没有** —— 下载 HTML 后断网也能完整使用。
 
 ## 免责声明
 
