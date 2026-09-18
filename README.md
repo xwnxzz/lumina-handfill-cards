@@ -1,4 +1,10 @@
+<div align="center">
+  <img src="assets/logo.png" alt="lumina studio 手填色卡" width="300">
+</div>
+
 # lumina studio 手填色卡
+
+<div align="center">
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Content: CC BY-NC-SA 4.0](https://img.shields.io/badge/Content-CC%20BY--NC--SA%204.0-lightgrey.svg)](CONTENT-LICENSE.md)
@@ -6,6 +12,8 @@
 [![Tests](https://img.shields.io/badge/tests-62%20passing-brightgreen.svg)](#测试)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](#隐私)
 [![Offline](https://img.shields.io/badge/offline-100%25-brightgreen.svg)](#隐私)
+
+</div>
 
 手工测量色块 RGB、离线生成 Lumina Studio 板面图的单文件工具。
 把色差仪 / 色度计的读数（或从照片取样的数值）填进网格，工具会**实时预览并导出可直接使用的板面图**，
@@ -106,6 +114,8 @@ python tools/lumina_profile_writer.py --brand "品牌" --name "耗材名" \
 ## 目录结构
 
 ```
+assets/
+  logo.png                    项目 logo（README 顶部）
 LICENSE                       代码许可（MIT）
 CONTENT-LICENSE.md            内容许可（CC BY-NC-SA 4.0）
 NOTICE.md                     第三方来源、逐篇署名与 AI 辅助说明
