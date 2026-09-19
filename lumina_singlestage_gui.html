@@ -404,6 +404,27 @@ function clampGrad(raw) {
                     : Math.max(0, Math.min(255, Math.round(n)));
 }
 
+/* ------------------------------------------------------------------
+   严格通道值：始终区分「未测量 = null」和「实测 0」
+   背景：以前用 clamp8()，空字符串 / 非法值会被静默夹成 0，
+   于是「没测」和「测到纯黑」在数据里长得一模一样，会污染档案。
+   ------------------------------------------------------------------ */
+/** 空 / 非法 / 非有限 → null；否则返回有限数 */
+function chOrNull(v) {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+/** 0–255 整数钳制；空 / 非法 → null（不写成 0） */
+function clamp8OrNull(v) {
+  const n = chOrNull(v);
+  return n === null ? null : Math.max(0, Math.min(255, Math.round(n)));
+}
+/** 统一「已填」定义：三个通道都有值才算填完；半填不计入 */
+function isFilled(v) { return !!v && v.r !== null && v.g !== null && v.b !== null; }
+/** 相对亮度 Y（Rec.709）；输入为线性 RGB */
+function lumY(r, g, b) { return 0.2126 * r + 0.7152 * g + 0.0722 * b; }
+
 function buildGrids() {
   const n = GRAD_SPEC.grid_rows * GRAD_SPEC.grid_cols;
   for (const sub of ["white","black"]) {
@@ -481,39 +502,57 @@ function syncInputMode() {
   });
   const el = document.getElementById("modeHint");
   if (el) el.innerHTML = lin
-    ? "当前：<strong>线性模式</strong> —— 请填 0–1 的线性光强（例如 0.216）。预览与导出的图片会自动转回 sRGB 显示。"
-    : "当前：<strong>sRGB 模式</strong>（默认）—— 色差仪/色度计的 RGB 读数就用这个，请填 0–255 的整数。";
+    ? "当前：<strong>线性模式</strong> —— 请填 <strong>0–1 的线性光强</strong>（例如 0.216，= sRGB 128）。"
+      + "适合仪器直接输出线性值的场合；预览与导出的图片会自动转回 sRGB 显示。"
+    : "当前：<strong>sRGB 模式</strong>（默认）—— 请填 <strong>sRGB 编码</strong>的 RGB，0–255 整数。"
+      + "色差仪 / 色度计若直接给 sRGB 读数就用这里；如果仪器给的是 <strong>Lab / XYZ / 光谱</strong>，"
+      + "请先自行转换到 sRGB 再填。本工具不做色彩空间换算。";
 }
 function completeMatrix(sub) {
   const arr = values[sub].map(v =>
-    (v.r === null || v.g === null || v.b === null) ? null : [v.r, v.g, v.b]);
+    (!v || v.r === null || v.g === null || v.b === null) ? null : [v.r, v.g, v.b]);
   return arr.every(Boolean) ? arr : null;
 }
 function sanity() {
   const msgs = [];
+  const order = canonOrderIdx();      // 按【厚度从小到大】，与屏幕顺序解耦
+  const TOL = 0.01;                   // 亮度容差（约 1–2 个 8bit 步进），避免测量噪声误报
   for (const sub of ["white","black"]) {
     const m = completeMatrix(sub);
     if (!m) { msgs.push(`${sub} 底板还有未填的格子。`); continue; }
-    // 必须按「厚度从小到大」的顺序检查，不能按屏幕顺序：
-    // 实物板可能是镜像的，屏幕顺序下厚度是 5,4,3,2,1,0…，会误报「越厚越亮」
-    const lin = canonOrderIdx().map(i => [toLinear(m[i][0]), toLinear(m[i][1]), toLinear(m[i][2])]);
-    for (let c = 0; c < 3; c++) {
-      let up = 0;
-      for (let i = 1; i < lin.length; i++) if (lin[i][c] > lin[i-1][c] + 1e-6) up++;
-      if (up) msgs.push(`${sub} 底板 ${"RGB"[c]} 通道有 ${up} 处「越厚越亮」。`);
+    // 用【相对亮度 Y】判断趋势，并让期望方向随基底变化：
+    //   白底：层数越多越暗（单调不增）
+    //   黑底：正向模型约束 E >= C0 ⇒ 只会越厚越亮（单调不减）
+    // 旧实现逐通道判「越厚越亮」，对「黑底 + 亮色耗材」这种完全正常的情况会误报；
+    // 单通道单调也不等于感知亮度单调。
+    const ys = order.map(i => {
+      const l = [toLinear(m[i][0]), toLinear(m[i][1]), toLinear(m[i][2])];
+      return lumY(l[0], l[1], l[2]);
+    });
+    const expectUp = (sub === "black");
+    let bad = 0;
+    for (let k = 1; k < ys.length; k++) {
+      const d = ys[k] - ys[k - 1];
+      if (expectUp ? d < -TOL : d > TOL) bad++;
     }
+    if (bad) msgs.push(`${sub} 底板亮度趋势有 ${bad} 处反转`
+      + `（${expectUp ? "黑底应越厚越亮" : "白底应越厚越暗"}），先确认「色块 ↔ 厚度」的对应顺序是否填错。`);
   }
   const w = completeMatrix("white"), b = completeMatrix("black");
   if (w && b) {
     const wl = w.map(r => r.map(toLinear)), bl = b.map(r => r.map(toLinear));
-    for (let c = 0; c < 3; c++) {
-      let bad = 0;
-      for (let i = 0; i < wl.length; i++) if (wl[i][c] < bl[i][c]) bad++;
-      if (bad) msgs.push(`${"RGB"[c]} 通道有 ${bad} 个样本白底比黑底还暗。`);
+    let bad = 0;
+    for (let i = 0; i < wl.length; i++) {
+      const dy = lumY(wl[i][0], wl[i][1], wl[i][2]) - lumY(bl[i][0], bl[i][1], bl[i][2]);
+      if (dy < -TOL) bad++;
     }
+    if (bad) msgs.push(`有 ${bad} 个样本白底比黑底还暗（同类色块的交叉校验；`
+      + `若只是轻微超出，可能是测量噪声或底板本身不匀）。`);
     const z = cornerIdx();      // 0 层那一格的物理位置（由方向决定）
-    if (wl[z].reduce((a,x)=>a+x,0)/3 < 0.55)
-      msgs.push(`白底零厚度采样偏暗（亮度 ${(wl[z].reduce((a,x)=>a+x,0)/3).toFixed(3)} < 0.55），实测时应接近纯白。`);
+    const yz = lumY(wl[z][0], wl[z][1], wl[z][2]);
+    if (yz < 0.55)
+      msgs.push(`白底零厚度采样偏暗（亮度 Y ${yz.toFixed(3)} < 0.55），实测时应接近纯白；`
+        + `若这是照片取样，先检查曝光与白平衡。`);
   }
   return msgs;
 }
@@ -606,9 +645,11 @@ function gradRestore() {
     for (const key of Object.keys(src)) {
       const i = +key, v = src[key];
       if (!(i >= 0 && i < n) || !Array.isArray(v) || v.length < 3) continue;
-      const cell = { r: v[0] === undefined ? null : v[0],
-                     g: v[1] === undefined ? null : v[1],
-                     b: v[2] === undefined ? null : v[2] };
+      // 严格校验：空 / 非数字 / NaN / 超出当前模式范围（线性 0–1、sRGB 0–255）→ null
+      // 本地存储可能被手工改坏或被旧版本写入，不能无条件信任
+      const lim = obj.lin ? 1 : 255;
+      const cl = x => { const n = chOrNull(x); return (n === null || n < 0 || n > lim) ? null : n; };
+      const cell = { r: cl(v[0]), g: cl(v[1]), b: cl(v[2]) };
       if (cell.r === null && cell.g === null && cell.b === null) continue;
       values[sub][i] = cell;
       const el = host.children[i];
@@ -784,7 +825,8 @@ function renderGradSpec() {
   </table>`;
 }
 function buildGridsKeepValues() {
-  const snapshot = JSON.parse(JSON.stringify(values));
+    // 显式拷贝（JSON 往返会把 undefined/NaN 变成 null，属于隐式副作用）
+  const snapshot = { white: values.white.map(v => ({ ...v })), black: values.black.map(v => ({ ...v })) };
   buildGrids();
   for (const sub of ["white","black"]) {
     const host = document.getElementById(sub === "white" ? "gridWhite" : "gridBlack");
@@ -806,7 +848,8 @@ function gradImportCsv(txt) {
     const t = +(layers * GRAD_SPEC.layer_height_mm).toFixed(4);
     idx.white[t] = inv[k]; idx.black[t] = inv[k];
   });
-  let n = 0, skipped = 0;
+  let n = 0, skipped = 0, dup = 0;
+  const seen = new Set();
   for (const raw of txt.split(/\r?\n/)) {
     const line = raw.trim();
     if (!line || line.startsWith("#")) continue;
@@ -822,9 +865,11 @@ function gradImportCsv(txt) {
       const cv = x => x === null ? null : +s2l(x / 255).toFixed(4);
       r = cv(r); g = cv(g); b = cv(b);
     }
+    const sk = sub + "#" + i;
+    if (seen.has(sk)) dup++; else seen.add(sk);
     values[sub][i] = { r, g, b }; n++;
   }
-  return { n, skipped };
+  return { n, skipped, dup };
 }
 document.getElementById("csvIn").addEventListener("change", async ev => {
   const f = ev.target.files[0]; if (!f) return;
@@ -836,6 +881,7 @@ document.getElementById("csvIn").addEventListener("change", async ev => {
   buildGridsKeepValues(); syncInputMode(); refreshAll(); gradPersistNow();
   showStatus("expInfo", res.n ? "ok" : "warn",
     res.n ? `已从 CSV 导入 ${res.n} 个色块。`
+            + (res.dup ? `　<strong>有 ${res.dup} 个格子出现多次，已按后出现的值覆盖</strong>。` : "")
             + (res.skipped ? `（跳过 ${res.skipped} 行表头/无法识别的行）` : "")
           : "CSV 里没有可用的行（需要 <code>substrate,thickness_mm,r,g,b</code>）。");
 });
@@ -881,10 +927,14 @@ document.getElementById("linInput").addEventListener("change", () => {
   const lin = isLinear();
   for (const sub of ["white","black"]) {
     values[sub] = values[sub].map(v => {
-      if (v.r === null || v.r === undefined) return v;
-      const f = x => lin
-        ? +s2l(Math.min(Math.max(x,0),255)/255).toFixed(4)
-        : Math.round(l2s(Math.min(Math.max(x,0),1)) * 255);
+      // 逐通道处理：未测量的通道保持 null，绝不写成 0
+      // （旧实现只判断 v.r，导致只填了 R 时 G/B 的 null 被当成 0 → 未测量冒充纯黑）
+      const f = x => {
+        const n = chOrNull(x);
+        if (n === null) return null;
+        return lin ? +s2l(Math.min(Math.max(n,0),255)/255).toFixed(4)
+                   : Math.round(l2s(Math.min(Math.max(n,0),1)) * 255);
+      };
       return { r:f(v.r), g:f(v.g), b:f(v.b) };
     });
   }
@@ -985,10 +1035,12 @@ function calBuildGrid(){
   let html = "";
   for (let i = 0; i < p.data * p.data; i++) {
     const used = i < usedData;
-    const d = used ? calData()[i] : null;
+    const raw = used ? calData()[i] : null;
+    const d = isFilled(raw) ? raw : null;            // 半填按未填处理，但仍保留已输入的值
+    const half = used && !d && !!raw;
     const style = d ? `background:rgb(${d.r},${d.g},${d.b})` : "";
     html += `<div class="calsw${used ? "" : " unused"}${d ? " filled" : ""}${i === cal.sel && used ? " sel" : ""}"
-              data-i="${i}" data-used="${used ? 1 : 0}" title="序号 ${i}｜行 ${Math.floor(i/p.data)} 列 ${i%p.data}"
+              data-i="${i}" data-used="${used ? 1 : 0}" title="序号 ${i}｜行 ${Math.floor(i/p.data)} 列 ${i%p.data}${half ? "（半填，未完成）" : ""}"
               style="${style}"></div>`;
   }
   host.innerHTML = html;
@@ -996,7 +1048,7 @@ function calBuildGrid(){
 }
 function calUpdateCount(){
   const p = calPageDef();
-  const filled = calData().filter(Boolean).length;
+  const filled = calData().filter(isFilled).length;   // 半填不算已填
   const el = document.getElementById("calCount");
   if (el) {
     el.textContent = `已填 ${filled} / ${p.cells} 格`;
@@ -1023,7 +1075,11 @@ function calUpdateEditor(){
   const p = calPageDef(), d = calData()[cal.sel] || {r:null,g:null,b:null};
   document.getElementById("calSelInfo").innerHTML =
     `序号 <strong>${cal.sel}</strong>　行 ${Math.floor(cal.sel/p.data)}　列 ${cal.sel % p.data}` +
-    (d.r === null ? "　<span style='color:var(--tx2);font-weight:400'>未填</span>" : "");
+    (() => {
+      const empty = d.r === null && d.g === null && d.b === null;
+      if (!empty && isFilled(d)) return "";
+      return `　<span style='color:var(--tx2);font-weight:400'>${empty ? "未填" : "半填（三通道齐全才算完成）"}</span>`;
+    })();
   document.getElementById("calR").value = d.r === null ? "" : d.r;
   document.getElementById("calG").value = d.g === null ? "" : d.g;
   document.getElementById("calB").value = d.b === null ? "" : d.b;
@@ -1032,10 +1088,9 @@ function calSetSelected(){
   const r = document.getElementById("calR").value;
   const g = document.getElementById("calG").value;
   const b = document.getElementById("calB").value;
-  // 顺手做范围钳制：输入 999 / -5 这类非法值会被夹到 0–255，避免存进档案与本地存储
-  calData()[cal.sel] = (r === "" && g === "" && b === "")
-    ? null
-    : { r: clamp8(r), g: clamp8(g), b: clamp8(b) };
+  // 逐通道独立处理：空/非法 → null（未测量），绝不写成 0（纯黑）
+  const cell = { r: clamp8OrNull(r), g: clamp8OrNull(g), b: clamp8OrNull(b) };
+  calData()[cal.sel] = (cell.r === null && cell.g === null && cell.b === null) ? null : cell;
   calRefreshSwatch(cal.sel);
   calUpdateCount();
   calUpdateEditor();
@@ -1059,7 +1114,7 @@ function calDrawPreview(target){
     const r = Math.floor(i / p.data) + p.pad, c = (i % p.data) + p.pad;
     const x = c * CAL_PX, y = r * CAL_PX;
     const d = calData()[i];
-    if (d) {
+    if (isFilled(d)) {          // 半填不画实色，仍显示斜纹（与网格一致）
       ctx.fillStyle = `rgb(${d.r},${d.g},${d.b})`;
       ctx.fillRect(x, y, CAL_PX, CAL_PX);
     } else {
@@ -1126,7 +1181,7 @@ function calSerialize() {
     const arr = calStore[key], sparse = {};
     for (let i = 0; i < arr.length; i++) {
       const v = arr[i];
-      if (v) sparse[i] = [v.r, v.g, v.b];
+      if (v && (v.r !== null || v.g !== null || v.b !== null)) sparse[i] = [v.r, v.g, v.b];
     }
     if (Object.keys(sparse).length) d[key] = sparse;
   }
@@ -1147,8 +1202,8 @@ function calPersistNow() {
   }
   if (calSaveFailed) calSetSaveHint("⚠ 自动保存失败（浏览器存储不可用或已满）", true);
   else {
-    const cells = ["white","black"] && Object.keys(calStore)
-      .reduce((a,k) => a + calStore[k].filter(Boolean).length, 0);
+    const cells = Object.keys(calStore)
+      .reduce((a,k) => a + calStore[k].filter(isFilled).length, 0);
     calSetSaveHint(cells ? `已自动保存 ${cells} 格` : "已自动保存", false);
   }
 }
@@ -1170,11 +1225,13 @@ function calRestore() {
     const arr = new Array(cells).fill(null);
     for (const i of Object.keys(obj.d[key])) {
       const idx = +i, v = obj.d[key][i];
-      if (idx >= 0 && idx < cells && Array.isArray(v) && v.length >= 3)
-        arr[idx] = { r: clamp8(v[0]), g: clamp8(v[1]), b: clamp8(v[2]) };
+      if (idx >= 0 && idx < cells && Array.isArray(v) && v.length >= 3) {
+        const cell = { r: clamp8OrNull(v[0]), g: clamp8OrNull(v[1]), b: clamp8OrNull(v[2]) };
+        if (cell.r !== null || cell.g !== null || cell.b !== null) arr[idx] = cell;
+      }
     }
     calStore[mode.key + "#" + page] = arr;
-    total += arr.filter(Boolean).length;
+    total += arr.filter(isFilled).length;
   }
   if (CAL_MODES.some(m => m.key === obj.mode)) cal.modeKey = obj.mode;
   cal.page = Math.min(Math.max(0, obj.page | 0), calMode().pages.length - 1);
@@ -1187,7 +1244,6 @@ function calRestore() {
    段落以 # mode,<模式名> / # page,<页码> 标记；数据列 index,row,col,r,g,b
    同时兼容 index,r,g,b 与 row,col,r,g,b 三种写法
    ========================================================================= */
-function clamp8(v){ return Math.max(0, Math.min(255, Math.round(Number(v) || 0))); }
 
 function calCsvKeys(all) {
   if (!all) return [calKey()];
@@ -1212,7 +1268,8 @@ function calCsvText(keys, includeBlanks) {
     if (!mode) continue;
     const page = Math.min(Math.max(0, +parts[1] || 0), mode.pages.length - 1);
     const pdef = mode.pages[page], arr = calStore[key] || [];
-    out += `\n# mode,${mode.label}\n# page,${page + 1}\n# cells,${pdef.cells}\n`;
+    // mode 用稳定 key（不随界面文案变化），mode_label 只用于人读
+    out += `\n# mode,${mode.key}\n# mode_label,${mode.label}\n# page,${page + 1}\n# cells,${pdef.cells}\n`;
     out += "index,row,col,r,g,b\n";
     for (let i = 0; i < pdef.cells; i++) {
       const d = arr[i], rc = `${i},${Math.floor(i / pdef.data)},${i % pdef.data}`;
@@ -1248,15 +1305,24 @@ async function calCsvExport(all) {
     + (blanks ? "（另含未填格的空行，便于在 Excel 里看完整网格）。" : "。"));
 }
 function calCsvImport(text) {
-  const sections = [];
-  let cur = null;
+  const sections = [], unknown = [], seen = new Set();
+  let cur = null, dup = 0, skipSection = false;
+  // mode 优先按稳定 key 匹配；同时兼容按 label 匹配（旧文件用的是 label）
   const ensure = modeVal => {
-    let mode = null;
-    if (modeVal) {
-      const t = String(modeVal).trim().toLowerCase();
-      mode = CAL_MODES.find(m => m.key.toLowerCase() === t || m.label.toLowerCase() === t);
+    skipSection = false;
+    const t = modeVal ? String(modeVal).trim().toLowerCase() : "";
+    if (!t) {                                    // 完全没声明段落 → 用当前选择（有意为之）
+      cur = { modeKey: calMode().key, page: 0, rows: [] };
+      sections.push(cur);
+      return;
     }
-    if (!mode) mode = calMode();                 // 未声明段落就用当前选择
+    const mode = CAL_MODES.find(m => m.key.toLowerCase() === t)
+              || CAL_MODES.find(m => m.label.toLowerCase() === t);
+    if (!mode) {                                 // 认不出来就【跳过整段】，绝不猜成当前板块
+      unknown.push(String(modeVal).trim());
+      cur = null; skipSection = true;
+      return;
+    }
     cur = { modeKey: mode.key, page: 0, rows: [] };
     sections.push(cur);
   };
@@ -1274,7 +1340,10 @@ function calCsvImport(text) {
     const p = line.split(",").map(s => s.trim());
     if (p.length < 4) continue;
     if (!/^\d+$/.test(p[0])) continue;           // 跳过表头 / 非数字行
-    if (!cur) ensure(null);
+    if (!cur) {
+      if (skipSection) continue;                 // 这一段模式名无法识别 → 整段跳过
+      ensure(null);
+    }
     const mode = CAL_MODES.find(m => m.key === cur.modeKey);
     const page = Math.min(Math.max(0, cur.page), mode.pages.length - 1);
     const pdef = mode.pages[page];
@@ -1283,10 +1352,13 @@ function calCsvImport(text) {
     else if (p.length === 5) { idx = (+p[0]) * pdef.data + (+p[1]); r = p[2]; g = p[3]; b = p[4]; }
     else                     { idx = +p[0]; r = p[1]; g = p[2]; b = p[3]; }
     if (!Number.isFinite(idx) || idx < 0 || idx >= pdef.cells) continue;
-    // 整行 RGB 都为空 = 「含未填格」导出的空行 → 必须跳过。
-    // 否则 clamp8("") 会得到 0，把空格子错误地填成黑色（导出含空格再导入就会踩到）
-    if (String(r).trim() === "" && String(g).trim() === "" && String(b).trim() === "") continue;
-    cur.rows.push({ page, index: idx, r: clamp8(r), g: clamp8(g), b: clamp8(b) });
+    // 逐通道判空：空/非法 → null。整行都为空 = 「含未填格」导出的空行 → 跳过。
+    // （以前 clamp8("") 得到 0，会把空格子错误地填成黑色）
+    r = clamp8OrNull(r); g = clamp8OrNull(g); b = clamp8OrNull(b);
+    if (r === null && g === null && b === null) continue;
+    const sk = cur.modeKey + "#" + page + "#" + idx;
+    if (seen.has(sk)) dup++; else seen.add(sk);      // 同一格出现多次：后者覆盖前者，但要让用户知道
+    cur.rows.push({ page, index: idx, r, g, b });    // r/g/b 上面已用 clamp8OrNull 处理过
   }
 
   let total = 0, boards = 0, first = null;
@@ -1310,7 +1382,7 @@ function calCsvImport(text) {
     cal.page = first.page;
     document.getElementById("calMode").value = first.modeKey;
   }
-  return { total, boards };
+  return { total, boards, dup, unknown };
 }
 
 document.getElementById("calMode").addEventListener("change", e => {
@@ -1355,13 +1427,13 @@ document.getElementById("calFillAll").addEventListener("click", () => {
     showStatus("calExpInfo","err","请先在 R/G/B 里填一个颜色，再用它填满全部。"); return;
   }
   const p = calPageDef();
-  calStore[calKey()] = new Array(p.cells).fill({ r:Number(r), g:Number(g), b:Number(b) });
+  calStore[calKey()] = Array.from({ length: p.cells }, () => ({ r:Number(r), g:Number(g), b:Number(b) }));
   calBuildGrid(); calUpdateEditor(); calDrawPreview(); calPersist();
   showStatus("calExpInfo","ok",`已用 rgb(${r},${g},${b}) 填满全部 ${p.cells} 格。`);
 });
 document.getElementById("calClearAll").addEventListener("click", () => {
   const p = calPageDef();
-  const filled = (calStore[calKey()] || []).filter(Boolean).length;
+  const filled = (calStore[calKey()] || []).filter(isFilled).length;
   if (filled && !confirm(
       `确定清空当前这一页的全部已填数据？\n共 ${filled} 格（${calMode().label} 第 ${cal.page + 1} 页），此操作不可撤销。\n`
       + `（可先点「导出当前页 CSV」留档）`)) return;
@@ -1393,8 +1465,11 @@ document.getElementById("calCsvIn").addEventListener("change", async ev => {
   calDrawPreview();
   calBuildLegend();
   calPersistNow();
-  showStatus("calExpInfo","ok",
-    `已导入 ${r.boards} 个板块、共 <strong>${r.total}</strong> 个色块，并已自动保存到本机。`);
+  showStatus("calExpInfo", r.unknown.length ? "warn" : "ok",
+    `已导入 ${r.boards} 个板块、共 <strong>${r.total}</strong> 个色块，并已自动保存到本机。`
+    + (r.dup ? `　<strong>有 ${r.dup} 个格子出现多次，已按后出现的值覆盖</strong>。` : "")
+    + (r.unknown.length ? `　<strong>跳过 ${r.unknown.length} 个无法识别的模式段落</strong>：`
+        + r.unknown.map(x => `<code>${x}</code>`).join("、") : ""));
 });
 document.getElementById("calWipe").addEventListener("click", () => {
   if (!confirm("确定清空全部模式、全部页面的已填数据？此操作不可撤销。\n（建议先「导出全部 CSV」留档）")) return;
@@ -1412,9 +1487,7 @@ function flushPendingSaves() {
 }
 window.addEventListener("beforeunload", flushPendingSaves);
 document.addEventListener("visibilitychange", () => { if (document.hidden) flushPendingSaves(); });
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden && calSaveTimer) { clearTimeout(calSaveTimer); calSaveTimer = null; calPersistNow(); }
-});
+
 document.getElementById("calExpOne").addEventListener("click", () => {
   const m = calMode();
   const nm = `校准板_${m.label.replace(/[\\/:*?"<>|]/g,"_")}` +
@@ -1423,7 +1496,7 @@ document.getElementById("calExpOne").addEventListener("click", () => {
   downloadCanvas(document.getElementById("prevCal"), nm, how => {
     if (how === "busy") return;
     if (how === "cancel") { showStatus("calExpInfo","warn","已取消保存。"); return; }
-    const p = calPageDef(), filled = calData().filter(Boolean).length;
+    const p = calPageDef(), filled = calData().filter(isFilled).length;
     const miss = p.cells - filled;
     showStatus("calExpInfo", miss ? "warn" : "ok",
       `已导出 <code>${nm}</code>（${p.data + 2*p.pad} × ${p.data + 2*p.pad} 格，${(p.data+2*p.pad)*CAL_PX} × ${(p.data+2*p.pad)*CAL_PX} px）。`
@@ -1447,7 +1520,7 @@ async function exportCalAllZip() {
       cal.page = idx;
       calDrawPreview(off);
       const arr = calStore[m.key + "#" + idx] || [];
-      missing += m.pages[idx].cells - arr.filter(Boolean).length;
+      missing += m.pages[idx].cells - arr.filter(isFilled).length;
       const nm = `校准板_${safe}` + (m.pages.length > 1 ? `_第${idx+1}页` : "") + ".png";
       items.push({ name: nm, data: await canvasPngBytes(off) });
     }

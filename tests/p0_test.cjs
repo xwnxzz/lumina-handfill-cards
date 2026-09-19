@@ -3,7 +3,7 @@
 const fs = require("fs");
 const html = fs.readFileSync("lumina_singlestage_gui.html", "utf8");
 
-const start = html.indexOf("const CAL_MODES = [");
+const start = html.indexOf("function chOrNull(");   // 起点前移：clamp8OrNull 定义在梯度卡区
 const end = html.indexOf('document.getElementById("calMode").addEventListener("change"');
 if (start < 0 || end < 0) { console.error("抽取失败", start, end); process.exit(1); }
 const code = html.slice(start, end);
@@ -11,7 +11,7 @@ console.log(`抽取代码 ${code.length} 字符`);
 
 const EXPORTS = ["CAL_MODES","cal","calStore","calSerialize","calPersistNow","calSetSaveHint",
                  "calRestore","calCsvText","calCsvImport","calCsvKeys","calKey","calPageDef",
-                 "calData","clamp8"];
+                 "calData","clamp8OrNull"];
 const factory = new Function(
   "localStorage", "document", "showStatus", "hideStatus", "CAL_PX", "confirm",
   code + "\nreturn {" + EXPORTS.join(",") + "};"
@@ -94,7 +94,8 @@ console.log("\n=== 测试 2：CSV 导出 → 导入 往返 ===");
   ok(keys.length === 3, "覆盖 3 个有数据的板块", JSON.stringify(keys));
   const csv = calCsvText(keys);
   ok(csv.count === 4, "统计色块数 = 4", csv.count);
-  ok(csv.text.includes("# mode,8-Color Max"), "含 # mode 段落标记");
+  ok(csv.text.includes("# mode,C8"), "含 # mode 段落标记（用稳定 key，不随界面文案变化）");
+  ok(csv.text.includes("# mode_label,8-Color Max"), "含 # mode_label（只给人读）");
   ok(csv.text.includes("# page,2"), "含 # page 段落标记（第 2 页）");
   console.log("  ---- CSV 前 10 行 ----");
   csv.text.split("\n").slice(0, 10).forEach(l => console.log("  | " + l));
@@ -111,7 +112,7 @@ console.log("\n=== 测试 2：CSV 导出 → 导入 往返 ===");
 console.log("\n=== 测试 3：格式兼容与健壮性 ===");
 {
   const { mod } = makeSandbox();
-  const { cal, calStore, calCsvImport, clamp8 } = mod;
+  const { cal, calStore, calCsvImport, clamp8OrNull } = mod;
   mod.CAL_MODES.find(m => m.key === "RYBW");
 
   cal.modeKey = "CMYW"; cal.page = 0;
@@ -137,8 +138,8 @@ console.log("\n=== 测试 3：格式兼容与健壮性 ===");
   t = calCsvImport("hello\nworld\n,,,\n");
   ok(t.total === 0, "垃圾输入不产生数据", t.total);
 
-  ok(clamp8(-5) === 0 && clamp8(300) === 255 && clamp8(128.6) === 129 && clamp8("abc") === 0,
-     "clamp8 边界正确");
+ok(clamp8OrNull(-5) === 0 && clamp8OrNull(300) === 255 && clamp8OrNull(128.6) === 129, "数值越界钳制到 0–255");
+  ok(clamp8OrNull("abc") === null && clamp8OrNull("") === null && clamp8OrNull(null) === null, "空/非法 → null（契约变更：不再静默变 0）");
 
   // 只导出当前页时，不应带上别的板块
   cal.modeKey = "RYBW"; cal.page = 0;

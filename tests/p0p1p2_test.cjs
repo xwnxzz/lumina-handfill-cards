@@ -25,7 +25,7 @@ const fns = ["function stamp", "function gradCsvText", "function gradImportCsv"]
 const EXPORTS = ["GRAD_SPEC","values","stepLayers","isLinear","clampGrad","canonIndexFor",
   "cornerIdx","canonOrderIdx","thicknessOf","gradSerialize","gradRestore","gradPersistNow",
   "gradSetSaveHint","stamp","gradCsvText","gradImportCsv","CAL_MODES","cal","calStore",
-  "calCsvText","calCsvImport","calCsvKeys","calKey","calPageDef","calData","clamp8"];
+  "calCsvText","calCsvImport","calCsvKeys","calKey","calPageDef","calData","clamp8OrNull"];
 
 function build() {
   const ls = {};
