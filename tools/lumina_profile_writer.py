@@ -94,13 +94,17 @@ _D65 = np.array([0.95047, 1.0, 1.08883])
 
 
 def linear_to_lab(lin: np.ndarray) -> np.ndarray:
-    """线性 RGB -> CIELAB(D65)。"""
+    """线性 RGB -> CIELAB(D65)。
+
+    注意：下面这个矩阵是【线性】sRGB -> XYZ(D65) 的标准矩阵，输入必须保持线性。
+    早期实现先把 lin 经 sRGB 传递函数编码再乘该矩阵，等于把编码值当线性值用，
+    会让 ΔE76 完全失去物理意义（--selftest 末尾的定点校验能抓住这个）。
+    """
     lin = np.asarray(lin, dtype=float).reshape(-1, 3)
-    srgb = linear_to_srgb(lin)
     m = np.array([[0.4124564, 0.3575761, 0.1804375],
                   [0.2126729, 0.7151522, 0.0721750],
                   [0.0193339, 0.1191920, 0.9503041]])
-    xyz = srgb @ m.T
+    xyz = lin @ m.T
     t = xyz / _D65
     d = 6 / 29
     f = np.where(t > d ** 3, np.cbrt(t), t / (3 * d ** 2) + 4 / 29)
@@ -118,14 +122,16 @@ def fit_channel(y_white: np.ndarray, y_black: np.ndarray,
                 c0_white: float, c0_black: float,
                 t: np.ndarray, k_max: float = 8.0,
                 k_steps: int = 400001) -> Tuple[float, float, float]:
-    """拟合单通道的 (E, k)。给定 k，E 线性可解；再对 k 一维扫描。
+    """拟合单通道的 (E, k)。给定 k，E 可线性解出；再对 k 做一维搜索。
 
     C = E + (C0 - E) * exp(-k t)
     t=0 处 C=C0 恒成立（残差 0），但**计入** rmse 分母以匹配官方口径。
-    约束 E >= 0（官方蓝通道即被钳到 0）。
+    约束 0 <= E <= 1：E 是线性反射率，只钳下界会让 E>1 被 linear_to_srgb()
+    静默截断，造成「档案里的 E」与「输出 RGB 代表的 E」不一致。
     """
-    best = None
-    for k in np.linspace(1e-4, k_max, k_steps):
+
+    def evaluate(k: float):
+        """给定 k：线性解出 E、钳到 [0,1]，返回 (E, k, rmse)。"""
         decay = np.exp(-k * t)
         # 模型 C = C0*decay + E*(1-decay)，对 E 线性
         a = np.concatenate([1 - decay, 1 - decay])
@@ -133,19 +139,44 @@ def fit_channel(y_white: np.ndarray, y_black: np.ndarray,
                             y_black - c0_black * decay])
         denom = float(np.dot(a, a))
         if denom <= 1e-14:
-            continue
+            return None
         E = float(np.dot(a, r) / denom)
-        # 物理约束：饱和色不得为负。E 被钳到 0 时模型退化为 C = C0*decay，
-        # 必须沿用同一个预测式（早期版本在此错误地引入自由缩放，会污染解）
         if E < 0.0:
             E = 0.0
+        elif E > 1.0:
+            E = 1.0
+        # 钳制后必须沿用同一个预测式（早期版本在此错误地引入自由缩放，会污染解）
         pred_w = E + (c0_white - E) * decay
         pred_b = E + (c0_black - E) * decay
         err = np.concatenate([pred_w - y_white, pred_b - y_black])
-        rmse = float(np.sqrt(np.sum(err ** 2) / err.size))
-        if best is None or rmse < best[2] - 1e-15:
-            best = (E, k, rmse)
+        return (E, float(k), float(np.sqrt(np.sum(err ** 2) / err.size)))
+
+    def scan(k_lo: float, k_hi: float, steps: int):
+        best = None
+        for k in np.linspace(k_lo, k_hi, steps):
+            v = evaluate(float(k))
+            if v is None:
+                continue
+            if best is None or v[2] < best[2] - 1e-15:
+                best = v
+        return best
+
+    # 粗搜定位最优盆地 → 两级细搜收紧。
+    # 精度优于原来的等步长全扫描（步长 2e-5），候选点从 40 万降到约 8000。
+    coarse_n = max(200, int(k_steps // 100))
+    best = scan(1e-4, k_max, coarse_n)
     assert best is not None, "拟合失败"
+    span = (k_max - 1e-4) / (coarse_n - 1)
+    for _ in range(2):
+        lo = max(1e-4, best[1] - span)
+        hi = min(k_max, best[1] + span)
+        if hi <= lo:
+            break
+        steps = 2001
+        cand = scan(lo, hi, steps)
+        if cand is not None and cand[2] < best[2]:
+            best = cand
+        span = (hi - lo) / (steps - 1)
     return best
 
 
@@ -223,8 +254,19 @@ def load_measurements(path: str, linear_input: bool) -> Tuple[np.ndarray, np.nda
         if len(pairs) != len(THICKNESS_MM):
             raise SystemExit(f"{sub}: 需要 {len(THICKNESS_MM)} 个厚度，实际 {len(pairs)} 个")
         if got_t != THICKNESS_MM:
+            # 逐元素比较其实已蕴含「无重复」（THICKNESS_MM 本身互不相同）；
+            # 下面只是把重复/缺失项点名，让报错更好定位
+            seen, dup = set(), []
+            for x in got_t:
+                if x in seen:
+                    dup.append(x)
+                seen.add(x)
+            extra = f"\n其中重复厚度：{sorted(set(dup))}" if dup else ""
+            missing = [x for x in THICKNESS_MM if x not in seen]
+            if missing:
+                extra += f"\n缺少厚度：{missing}"
             raise SystemExit(
-                f"{sub}: 厚度必须正好是\n  {THICKNESS_MM}\n实际是\n  {got_t}")
+                f"{sub}: 厚度必须正好是\n  {THICKNESS_MM}\n实际是\n  {got_t}{extra}")
         arr = np.array([p[1] for p in pairs], dtype=float)
         if linear_input:
             out[sub] = np.clip(arr, 0.0, 1.0)
@@ -471,6 +513,28 @@ def selftest() -> int:
     print()
     print(f"整体 rmse_linear  拟合 {fit['rmse_linear']:.9f} | "
           f"官方 {OFFICIAL['rmse_linear']:.9f}")
+    print()
+    # ---- Lab / ΔE 管线的定点校验 ----
+    # 这一组能抓住「把 sRGB 编码值当线性值喂给 RGB→XYZ 矩阵」这类错误：
+    # 它与 E/k 的拟合正确性无关，所以只看拟合数值是发现不了的。
+    print()
+    print("色彩管线定点校验（Lab / ΔE76）")
+    lab_mid = linear_to_lab(np.array([[0.2158605] * 3]))[0]
+    lab_w = linear_to_lab(np.array([[1.0] * 3]))[0]
+    lab_b = linear_to_lab(np.array([[0.0] * 3]))[0]
+    de_wb = float(delta_e_76(lab_w.reshape(1, 3), lab_b.reshape(1, 3))[0])
+    checks = [
+        ("线性灰 0.2158605 的 L*", lab_mid[0], 53.585, 0.01),
+        ("白色 L*", lab_w[0], 100.0, 0.01),
+        ("黑色 L*", lab_b[0], 0.0, 0.01),
+        ("中性灰 a*", lab_w[1], 0.0, 0.01),
+        ("中性灰 b*", lab_w[2], 0.0, 0.01),
+        ("黑白 ΔE76", de_wb, 100.0, 0.01),
+    ]
+    for nm, got, want, tol in checks:
+        good = abs(got - want) <= tol
+        ok &= good
+        print(f"  {nm:<22} 实测 {got:9.4f} | 应为 {want:9.4f}   {'OK' if good else 'DIFF'}")
     print()
     print("结论：" + ("模型实现与官方一致，可放心使用。" if ok else "存在差异，请勿直接使用！"))
     print()

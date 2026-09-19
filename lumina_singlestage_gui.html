@@ -362,6 +362,15 @@ const GRAD_SPEC = {
 const SUBSTRATES = [ {id:"white", base:[255,255,255]}, {id:"black", base:[0,0,0]} ];
 let values = { white: [], black: [] };     // values[sub][i] = {r,g,b}
 
+/* 被 fillCornerDefaults() 自动填成「基底基准色」的格子 —— 那不是实测值。
+   0 层是正向模型的 C0 锚点，必须把「显示用的基准色」和「实测值」分开：
+   计数、CSV 导出、体检都要排除它，否则软件假定的 255 会冒充真实测量。 */
+const defaultCells = { white: {}, black: {} };
+/** 该格是否算「已实测」：三通道齐全，且不是自动填的基准色 */
+function isMeasured(sub, i) {
+  return isFilled(values[sub][i]) && !defaultCells[sub][i];
+}
+
 function isLinear(){ return document.getElementById("linInput").checked; }
 function toDisp8(v){
   if (v === null || v === undefined || v === "") return null;
@@ -420,8 +429,12 @@ function clamp8OrNull(v) {
   const n = chOrNull(v);
   return n === null ? null : Math.max(0, Math.min(255, Math.round(n)));
 }
-/** 统一「已填」定义：三个通道都有值才算填完；半填不计入 */
-function isFilled(v) { return !!v && v.r !== null && v.g !== null && v.b !== null; }
+/** 统一「已填」定义：三个通道都有值才算填完；半填不计入。
+ *  用 `!= null` 同时排除 null 与 undefined —— 只判 `!== null` 时，
+ *  缺失的格子（v.r === undefined）会被误判成「已填」，导出会写出字面量 undefined。 */
+function isFilled(v) {
+  return !!v && v.r != null && v.g != null && v.b != null;
+}
 /** 相对亮度 Y（Rec.709）；输入为线性 RGB */
 function lumY(r, g, b) { return 0.2126 * r + 0.7152 * g + 0.0722 * b; }
 
@@ -450,6 +463,7 @@ function buildGrids() {
           `${sub === "white" ? "白底板" : "黑底板"} ${layers} 层 ${inp.dataset.c.toUpperCase()}`);
         inp.addEventListener("input", () => {
           values[sub][i][inp.dataset.c] = clampGrad(inp.value);
+          delete defaultCells[sub][i];        // 用户开始输入 → 这一格不再是「默认基准」
           refreshCell(sub, i, cell);
           scheduleRefresh();
           gradPersist();
@@ -483,9 +497,13 @@ function fillCornerDefaults() {
     const v = values[s.id][idx];
     if (!v) continue;
     const c = s.base[0] ? k : 0;          // 白基底 → k；黑基底 → 0
-    if (v.r === null) v.r = c;
-    if (v.g === null) v.g = c;
-    if (v.b === null) v.b = c;
+    let auto = false;
+    if (v.r === null) { v.r = c; auto = true; }
+    if (v.g === null) { v.g = c; auto = true; }
+    if (v.b === null) { v.b = c; auto = true; }
+    // 自动填的只是「显示用的基准色」，必须标记出来：
+    // 0 层是正向模型的 C0 锚点，绝不能拿软件假定的 255 去冒充实测值
+    if (auto) defaultCells[s.id][idx] = true;
     document.querySelectorAll(
       (s.id === "white" ? "#gridWhite" : "#gridBlack") + " .cell")[idx]
       ?.querySelectorAll("input").forEach(inp => {
@@ -509,13 +527,22 @@ function syncInputMode() {
       + "请先自行转换到 sRGB 再填。本工具不做色彩空间换算。";
 }
 function completeMatrix(sub) {
-  const arr = values[sub].map(v =>
-    (!v || v.r === null || v.g === null || v.b === null) ? null : [v.r, v.g, v.b]);
+  const arr = values[sub].map(v => isFilled(v) ? [v.r, v.g, v.b] : null);
   return arr.every(Boolean) ? arr : null;
 }
 function sanity() {
   const msgs = [];
   const order = canonOrderIdx();      // 按【厚度从小到大】，与屏幕顺序解耦
+  // 0 层是否仍是软件填的默认基准色？放在最前面，未填满时也要提示 ——
+  // C0 是整条衰减曲线的锚点，软件替用户假定 255 会掩盖底板真实颜色。
+  const zc = cornerIdx();
+  if (defaultCells.white[zc] || defaultCells.black[zc]) {
+    const which = [defaultCells.white[zc] && "白底", defaultCells.black[zc] && "黑底"]
+      .filter(Boolean).join("、");
+    msgs.push(`${which} 0 层（裸基底）仍是默认基准色、未实测。`
+      + `C0 是整条衰减曲线的锚点，必须实测后再用于拟合 —— 软件替你假定 255 会掩盖底板真实颜色。`
+      + `在网格上点那一格、按实测值填写即可。`);
+  }
   const TOL = 0.01;                   // 亮度容差（约 1–2 个 8bit 步进），避免测量噪声误报
   for (const sub of ["white","black"]) {
     const m = completeMatrix(sub);
@@ -549,10 +576,12 @@ function sanity() {
     if (bad) msgs.push(`有 ${bad} 个样本白底比黑底还暗（同类色块的交叉校验；`
       + `若只是轻微超出，可能是测量噪声或底板本身不匀）。`);
     const z = cornerIdx();      // 0 层那一格的物理位置（由方向决定）
-    const yz = lumY(wl[z][0], wl[z][1], wl[z][2]);
-    if (yz < 0.55)
-      msgs.push(`白底零厚度采样偏暗（亮度 Y ${yz.toFixed(3)} < 0.55），实测时应接近纯白；`
-        + `若这是照片取样，先检查曝光与白平衡。`);
+    if (!defaultCells.white[z]) {                       // 未实测的情况已在上方提示
+      const yz = lumY(wl[z][0], wl[z][1], wl[z][2]);
+      if (yz < 0.55)
+        msgs.push(`白底零厚度采样偏暗（亮度 Y ${yz.toFixed(3)} < 0.55），实测时应接近纯白；`
+          + `若这是照片取样，先检查曝光与白平衡。`);
+    }
   }
   return msgs;
 }
@@ -679,8 +708,11 @@ function refreshAll() {
   if (fc) {
     const total = 2 * stepLayers().length;
     const cnt = ["white","black"].reduce((a, s) =>
-      a + values[s].filter(v => v.r !== null && v.g !== null && v.b !== null).length, 0);
-    fc.textContent = `已填 ${cnt} / ${total} 格`;
+      a + values[s].filter((v, i) => isFilled(v) && !defaultCells[s][i]).length, 0);
+    const ndef = ["white","black"].reduce((a, s) =>
+      a + values[s].filter((v, i) => isFilled(v) && defaultCells[s][i]).length, 0);
+    fc.textContent = `已测 ${cnt} / ${total} 格`
+      + (ndef ? `（另有 ${ndef} 格为默认基准，未实测）` : "");
     fc.style.color = cnt === total ? "var(--ok)" : "";
   }
   const msgs = sanity();
@@ -694,8 +726,9 @@ function refreshAll() {
   } else box.className = "status";
 }
 function countUnfilled() {
+  // 「默认基准」不算实测，计入未测，避免导出提示谎报"全部已填"
   return ["white","black"].reduce((a, s) =>
-    a + values[s].filter(v => v.r === null || v.g === null || v.b === null).length, 0);
+    a + values[s].filter((v, i) => !(isFilled(v) && !defaultCells[s][i])).length, 0);
 }
 /* ------------------------------------------------------------------
    极简 ZIP 写入器（STORE 不压缩）：只用于把两张 PNG 打成一个 zip。
@@ -848,6 +881,7 @@ function gradImportCsv(txt) {
     const t = +(layers * GRAD_SPEC.layer_height_mm).toFixed(4);
     idx.white[t] = inv[k]; idx.black[t] = inv[k];
   });
+  const csvLinear = gradCsvMode(txt);      // CSV 声明的模式（null = 未声明，按 sRGB）
   let n = 0, skipped = 0, dup = 0;
   const seen = new Set();
   for (const raw of txt.split(/\r?\n/)) {
@@ -860,11 +894,10 @@ function gradImportCsv(txt) {
     const i = idx[sub]?.[+p[1]];
     if (i === undefined) { skipped++; continue; }
     if (p[2] === "" && p[3] === "" && p[4] === "") continue;           // 整行留空 = 未填
-    let r = clampGrad(p[2]), g = clampGrad(p[3]), b = clampGrad(p[4]);
-    if (isLinear()) {                                                  // CSV 里是 0–255，需换算
-      const cv = x => x === null ? null : +s2l(x / 255).toFixed(4);
-      r = cv(r); g = cv(g); b = cv(b);
-    }
+    // 按 CSV 自己声明的模式换算到当前 UI 模式（不再假定 CSV 一定是 sRGB）
+    const r = gradCsvValue(p[2], csvLinear);
+    const g = gradCsvValue(p[3], csvLinear);
+    const b = gradCsvValue(p[4], csvLinear);
     const sk = sub + "#" + i;
     if (seen.has(sk)) dup++; else seen.add(sk);
     values[sub][i] = { r, g, b }; n++;
@@ -886,24 +919,69 @@ document.getElementById("csvIn").addEventListener("change", async ev => {
           : "CSV 里没有可用的行（需要 <code>substrate,thickness_mm,r,g,b</code>）。");
 });
 /** 「导出测量 CSV」：格式与导入、以及 lumina_profile_writer.py 完全一致 */
+/** 解析 CSV 里声明输入模式：'linear' / 'srgb' / null（未声明）。
+ *  CSV 必须自描述 —— 否则「线性模式导出 → 线性模式导入」会被当成 sRGB 再转一次，
+ *  0.216 会变成 0.000065，数据被彻底破坏。 */
+function gradCsvMode(txt) {
+  for (const raw of txt.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line.startsWith("#")) break;            // 只看文件开头的注释块
+    const s = line.replace(/^#\s*/, "");
+    let m = s.match(/^input_mode\s*,\s*(linear|srgb)\s*$/i);
+    if (m) return m[1].toLowerCase();
+    m = s.match(/^输入模式\s*,\s*(线性|sRGB)/i);   // 兼容旧版本写的中文说明行
+    if (m) return /线性/.test(m[1]) ? "linear" : "srgb";
+  }
+  return null;
+}
+/** 把 CSV 里的一个数值换算成【当前 UI 模式】下的表示。
+ *  csvLinear: true=CSV 是线性 0–1；false=sRGB 0–255；null=未声明（按 sRGB 约定处理） */
+function gradCsvValue(raw, csvLinear) {
+  if (raw === null || raw === undefined || raw === "") return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return null;
+  // csvLinear 允许是 true/false，也允许是 gradCsvMode() 返回的 'linear'/'srgb' 字符串。
+  // 早期写法直接把字符串透传，'srgb' 是真值 → 被当成线性值，11 会被换算成 255。
+  const srcLinear = (csvLinear === true || csvLinear === "linear");
+  const dstLinear = isLinear();
+  if (srcLinear === dstLinear) {
+    return dstLinear ? Math.max(0, Math.min(1, n))
+                     : Math.max(0, Math.min(255, Math.round(n)));
+  }
+  if (srcLinear) {                                // CSV 线性 → UI sRGB
+    return Math.max(0, Math.min(255, Math.round(l2s(Math.max(0, Math.min(1, n))) * 255)));
+  }
+  return +s2l(Math.max(0, Math.min(255, n)) / 255).toFixed(4);   // CSV sRGB → UI 线性
+}
 function gradCsvText() {
   let out = "# lumina studio 手填色卡 · 梯度卡测量数据\n";
+  // 机器可读的模式声明（导入时按它换算，而不是按当前 UI 猜）
+  out += `# input_mode,${isLinear() ? "linear" : "srgb"}\n`;
   out += `# 输入模式,${isLinear() ? "线性 0-1" : "sRGB 0-255"}\n`;
   out += "# 列：substrate,thickness_mm,r,g,b；未填的格子留空\n";
+  out += "# 0 层若仍是「默认基准」（未实测），这里输出为空 —— C0 必须实测\n";
   out += "substrate,thickness_mm,r,g,b\n";
   // 按【厚度从小到大】输出，与实物板方向无关，方便对照
   for (const sub of ["white", "black"])
     for (const i of canonOrderIdx()) {
       const v = values[sub][i] || {};
+      const meas = isFilled(v) && !defaultCells[sub][i];   // 默认基准不算实测
       out += `${sub},${thicknessOf(canonIndexFor(i))},`
-           + `${v.r ?? ""},${v.g ?? ""},${v.b ?? ""}\n`;
+           + (meas ? `${v.r},${v.g},${v.b}` : ",,") + "\n";
     }
   return out;
 }
 document.getElementById("csvOut").addEventListener("click", async () => {
   const filled = ["white","black"].reduce((a, s) =>
-    a + values[s].filter(v => v.r !== null || v.g !== null || v.b !== null).length, 0);
-  if (!filled) { showStatus("expInfo","warn","还没有任何已填数据，无可导出。"); return; }
+    a + values[s].filter((v, i) => isFilled(v) && !defaultCells[s][i]).length, 0);
+  const ndef = ["white","black"].reduce((a, s) =>
+    a + values[s].filter((v, i) => isFilled(v) && defaultCells[s][i]).length, 0);
+  if (!filled) {
+    showStatus("expInfo","warn", ndef
+      ? "只有默认基准格，没有实测数据可导出。0 层（裸基底）是 C0 锚点，请实测后再导出。"
+      : "还没有任何已填数据，无可导出。");
+    return;
+  }
   const nm = `梯度卡_测量数据_${stamp()}.csv`;
   const how = await saveBlob(new Blob([gradCsvText()], { type: "text/csv;charset=utf-8" }), nm);
   if (how === "busy") return;
@@ -1059,8 +1137,11 @@ function calRefreshSwatch(i){
   const el = document.querySelector(`.calsw[data-i="${i}"]`);
   if (!el) return;
   const d = calData()[i];
-  el.style.background = d ? `rgb(${d.r},${d.g},${d.b})` : "";
-  el.classList.toggle("filled", !!d);
+  // 必须用 isFilled：否则半填会生成 rgb(120,null,null) 这种非法颜色，
+  // 而且 filled 状态与 calBuildGrid / calUpdateCount 的口径不一致
+  const filled = isFilled(d);
+  el.style.background = filled ? `rgb(${d.r},${d.g},${d.b})` : "";
+  el.classList.toggle("filled", filled);
 }
 function calSelect(i){
   const p = calPageDef();
@@ -1349,7 +1430,13 @@ function calCsvImport(text) {
     const pdef = mode.pages[page];
     let idx, r, g, b;
     if (p.length >= 6)       { idx = +p[0]; r = p[3]; g = p[4]; b = p[5]; }
-    else if (p.length === 5) { idx = (+p[0]) * pdef.data + (+p[1]); r = p[2]; g = p[3]; b = p[4]; }
+    else if (p.length === 5) {
+      // row/col 必须各自合法：(-1, data+1) 这类组合会算出看似合法的 index 却不是合法格子
+      const rr = +p[0], cc = +p[1];
+      if (!Number.isInteger(rr) || !Number.isInteger(cc)
+          || rr < 0 || rr >= pdef.data || cc < 0 || cc >= pdef.data) continue;
+      idx = rr * pdef.data + cc; r = p[2]; g = p[3]; b = p[4];
+    }
     else                     { idx = +p[0]; r = p[1]; g = p[2]; b = p[3]; }
     if (!Number.isFinite(idx) || idx < 0 || idx >= pdef.cells) continue;
     // 逐通道判空：空/非法 → null。整行都为空 = 「含未填格」导出的空行 → 跳过。
@@ -1423,13 +1510,15 @@ document.getElementById("calClearCell").addEventListener("click", () => {
 document.getElementById("calFillAll").addEventListener("click", () => {
   const r = document.getElementById("calR").value, g = document.getElementById("calG").value,
         b = document.getElementById("calB").value;
-  if (r === "" || g === "" || b === "") {
-    showStatus("calExpInfo","err","请先在 R/G/B 里填一个颜色，再用它填满全部。"); return;
+  // 必须走和单格输入相同的钳制：否则 999 / -100 / 空 会被原样写满整块板
+  const cr = clamp8OrNull(r), cg = clamp8OrNull(g), cb = clamp8OrNull(b);
+  if (cr === null || cg === null || cb === null) {
+    showStatus("calExpInfo","err","请先把 R / G / B 都填成 0–255 的数值，再用它填满全部。"); return;
   }
   const p = calPageDef();
-  calStore[calKey()] = Array.from({ length: p.cells }, () => ({ r:Number(r), g:Number(g), b:Number(b) }));
+  calStore[calKey()] = Array.from({ length: p.cells }, () => ({ r: cr, g: cg, b: cb }));
   calBuildGrid(); calUpdateEditor(); calDrawPreview(); calPersist();
-  showStatus("calExpInfo","ok",`已用 rgb(${r},${g},${b}) 填满全部 ${p.cells} 格。`);
+  showStatus("calExpInfo","ok",`已用 rgb(${cr},${cg},${cb}) 填满全部 ${p.cells} 格。`);
 });
 document.getElementById("calClearAll").addEventListener("click", () => {
   const p = calPageDef();

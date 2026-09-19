@@ -25,12 +25,12 @@ const code = [ STUBS,
   html.slice(html.indexOf("const s2l = c =>"), html.indexOf("function downloadCanvas")),
   html.slice(html.indexOf("const GRAD_SPEC = {"), html.indexOf("function scheduleRefresh(){")),
   html.slice(html.indexOf("const SLOT_COLORS"), html.indexOf('document.getElementById("calMode").addEventListener("change"')),
-  fn("gradImportCsv"), fn("calCsvImport"), fn("calCsvText"),
+  fn("gradCsvMode"), fn("gradCsvValue"), fn("gradImportCsv"), fn("calCsvImport"), fn("calCsvText"),
   "function __linToggle(){ " + liBody + " }"
 ].join("\n");
 
 const EXPORTS = ["values","s2l","l2s","chOrNull","clamp8OrNull","clampGrad","isFilled","lumY","sanity","completeMatrix",
-  "gradRestore","gradImportCsv","calCsvImport","calCsvText","calCsvKeys","cal","calStore","calMode","calKey","calData",
+  "gradRestore","gradCsvMode","gradCsvValue","gradImportCsv","calCsvImport","calCsvText","calCsvKeys","cal","calStore","calMode","calKey","calData",
   "calSetSelected","calPageDef","isLinear","__linToggle","CAL_MODES","stepLayers","canonIndexFor"];
 
 function build() {
@@ -216,12 +216,13 @@ console.log("\n=== 8) CSV 重复测量值上报（原 P1-8）===");
 /* ===== 9. 结构性清理 ===== */
 console.log("\n=== 9) 结构性清理（原 P2-21/22/26/29/30）===");
 {
-  ok(!/filter\(Boolean\)/.test(html), "「已填」判定已统一为 isFilled（无 filter(Boolean) 残留）");
+  ok(!/filter\(Boolean\)\.length/.test(html), "「已填」判定已统一为 isFilled（计数处无 filter(Boolean).length）");
   ok(!/new Array\(p\.cells\)\.fill\(\{/.test(html), "calFillAll 不再共享同一对象引用");
   ok(!/\["white","black"\] &&/.test(html), "calPersistNow 的冗余表达式已移除");
   ok(!/JSON\.parse\(JSON\.stringify\(values\)\)/.test(html), "buildGridsKeepValues 不再用 JSON 往返");
   ok((html.match(/addEventListener\("visibilitychange"/g) || []).length === 1, "visibilitychange 只注册一次");
-  ok(/!v \|\| v\.r === null/.test(html), "completeMatrix 有 undefined 防御");
+  ok(/function isFilled\(v\) \{\s*\n?\s*return !!v && v\.r != null/.test(html), "isFilled 用 != null 同时排除 null 与 undefined");
+  ok(/completeMatrix[\s\S]{0,200}isFilled\(v\)/.test(html), "completeMatrix 复用 isFilled（不再自己判 null）");
   ok(!/function clamp8\(/.test(html), "旧 clamp8 已删除（避免静默变 0）");
 }
 

@@ -16,15 +16,17 @@ function braceExtract(sig) {
 const a1 = html.indexOf("const GRAD_SPEC = {");
 const a2 = html.indexOf("function scheduleRefresh(){");
 const regionGrad = html.slice(a1, a2);
+// 区块 0：s2l / l2s（gradCsvValue 的线性↔sRGB 换算要用）
+const region0 = html.slice(html.indexOf("const s2l = c =>"), html.indexOf("function downloadCanvas"));
 // 区块 B：校准板（含 CSV 读写）
 const b1 = html.indexOf("const CAL_MODES = [");
 const b2 = html.indexOf('document.getElementById("calMode").addEventListener("change"');
 const regionCal = html.slice(b1, b2);
-const fns = ["function stamp", "function gradCsvText", "function gradImportCsv"].map(braceExtract).join("\n");
+const fns = ["function stamp", "function gradCsvMode", "function gradCsvValue", "function gradCsvText", "function gradImportCsv"].map(braceExtract).join("\n");
 
 const EXPORTS = ["GRAD_SPEC","values","stepLayers","isLinear","clampGrad","canonIndexFor",
   "cornerIdx","canonOrderIdx","thicknessOf","gradSerialize","gradRestore","gradPersistNow",
-  "gradSetSaveHint","stamp","gradCsvText","gradImportCsv","CAL_MODES","cal","calStore",
+  "gradSetSaveHint","stamp","gradCsvText","gradCsvMode","gradCsvValue","gradImportCsv","CAL_MODES","cal","calStore",
   "calCsvText","calCsvImport","calCsvKeys","calKey","calPageDef","calData","clamp8OrNull"];
 
 function build() {
@@ -41,7 +43,7 @@ function build() {
   const document = { getElementById: id => (dom[id] = dom[id] || mk()),
                      querySelectorAll: () => [], querySelector: () => null, addEventListener(){} };
   const factory = new Function("localStorage","document","showStatus","hideStatus","confirm","Blob","TextEncoder",
-    regionGrad + "\n" + regionCal + "\n" + fns + "\nreturn {" + EXPORTS.join(",") + "};");
+    region0 + "\n" + regionGrad + "\n" + regionCal + "\n" + fns + "\nreturn {" + EXPORTS.join(",") + "};");
   return { mod: factory(localStorage, document, ()=>{}, ()=>{}, ()=>true, Blob, TextEncoder), localStorage, dom };
 }
 
@@ -107,7 +109,7 @@ console.log("\n=== ④ 梯度卡 CSV 往返（含无表头文件，验证③修�
   const lines = csv.trim().split("\n");
   ok(lines[0].startsWith("#"), "首行是注释头");
   ok(lines.some(l => l.startsWith("substrate,thickness_mm,r,g,b")), "含表头行");
-  ok(lines.length === 4 + 18*2, "行数 = 4 行头 + 36 数据（每块板 18 格）", lines.length);
+  ok(lines.length === 6 + 18*2, "行数 = 6 行头（含 input_mode 声明）+ 36 数据", lines.length);
   ok(csv.includes("white,0,255,255,255"), "右上角(0 层)导出正确");
   ok(csv.includes("black,2,200,100,50"), "25 层 = 2mm 导出正确");
 
