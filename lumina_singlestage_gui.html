@@ -370,6 +370,10 @@ const defaultCells = { white: {}, black: {} };
 function isMeasured(sub, i) {
   return isFilled(values[sub][i]) && !defaultCells[sub][i];
 }
+/** 该格是否是「默认基准」（软件自动填的基底色，未实测） */
+function isDefaultBasis(sub, i) {
+  return isFilled(values[sub][i]) && !!defaultCells[sub][i];
+}
 
 function isLinear(){ return document.getElementById("linInput").checked; }
 function toDisp8(v){
@@ -708,9 +712,9 @@ function refreshAll() {
   if (fc) {
     const total = 2 * stepLayers().length;
     const cnt = ["white","black"].reduce((a, s) =>
-      a + values[s].filter((v, i) => isFilled(v) && !defaultCells[s][i]).length, 0);
+      a + values[s].filter((v, i) => isMeasured(s, i)).length, 0);
     const ndef = ["white","black"].reduce((a, s) =>
-      a + values[s].filter((v, i) => isFilled(v) && defaultCells[s][i]).length, 0);
+      a + values[s].filter((v, i) => isDefaultBasis(s, i)).length, 0);
     fc.textContent = `已测 ${cnt} / ${total} 格`
       + (ndef ? `（另有 ${ndef} 格为默认基准，未实测）` : "");
     fc.style.color = cnt === total ? "var(--ok)" : "";
@@ -728,7 +732,7 @@ function refreshAll() {
 function countUnfilled() {
   // 「默认基准」不算实测，计入未测，避免导出提示谎报"全部已填"
   return ["white","black"].reduce((a, s) =>
-    a + values[s].filter((v, i) => !(isFilled(v) && !defaultCells[s][i])).length, 0);
+    a + values[s].filter((v, i) => !isMeasured(s, i)).length, 0);
 }
 /* ------------------------------------------------------------------
    极简 ZIP 写入器（STORE 不压缩）：只用于把两张 PNG 打成一个 zip。
@@ -965,7 +969,7 @@ function gradCsvText() {
   for (const sub of ["white", "black"])
     for (const i of canonOrderIdx()) {
       const v = values[sub][i] || {};
-      const meas = isFilled(v) && !defaultCells[sub][i];   // 默认基准不算实测
+      const meas = isMeasured(sub, i);   // 默认基准不算实测
       out += `${sub},${thicknessOf(canonIndexFor(i))},`
            + (meas ? `${v.r},${v.g},${v.b}` : ",,") + "\n";
     }
@@ -973,9 +977,9 @@ function gradCsvText() {
 }
 document.getElementById("csvOut").addEventListener("click", async () => {
   const filled = ["white","black"].reduce((a, s) =>
-    a + values[s].filter((v, i) => isFilled(v) && !defaultCells[s][i]).length, 0);
+    a + values[s].filter((v, i) => isMeasured(s, i)).length, 0);
   const ndef = ["white","black"].reduce((a, s) =>
-    a + values[s].filter((v, i) => isFilled(v) && defaultCells[s][i]).length, 0);
+    a + values[s].filter((v, i) => isDefaultBasis(s, i)).length, 0);
   if (!filled) {
     showStatus("expInfo","warn", ndef
       ? "只有默认基准格，没有实测数据可导出。0 层（裸基底）是 C0 锚点，请实测后再导出。"
@@ -1114,6 +1118,7 @@ function calBuildGrid(){
   for (let i = 0; i < p.data * p.data; i++) {
     const used = i < usedData;
     const raw = used ? calData()[i] : null;
+    // d 已被规范化为「null 或完整对象」，所以下面用 d 的真值判断等价于 isFilled(raw)
     const d = isFilled(raw) ? raw : null;            // 半填按未填处理，但仍保留已输入的值
     const half = used && !d && !!raw;
     const style = d ? `background:rgb(${d.r},${d.g},${d.b})` : "";
@@ -1512,7 +1517,7 @@ document.getElementById("calFillAll").addEventListener("click", () => {
         b = document.getElementById("calB").value;
   // 必须走和单格输入相同的钳制：否则 999 / -100 / 空 会被原样写满整块板
   const cr = clamp8OrNull(r), cg = clamp8OrNull(g), cb = clamp8OrNull(b);
-  if (cr === null || cg === null || cb === null) {
+  if (!isFilled({ r: cr, g: cg, b: cb })) {
     showStatus("calExpInfo","err","请先把 R / G / B 都填成 0–255 的数值，再用它填满全部。"); return;
   }
   const p = calPageDef();
