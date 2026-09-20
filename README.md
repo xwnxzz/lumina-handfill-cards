@@ -9,7 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Content: CC BY-NC-SA 4.0](https://img.shields.io/badge/Content-CC%20BY--NC--SA%204.0-lightgrey.svg)](CONTENT-LICENSE.md)
 [![Release](https://img.shields.io/github/v/release/xwnxzz/lumina-handfill-cards?label=release&color=blue)](https://github.com/xwnxzz/lumina-handfill-cards/releases/latest)
-[![Tests](https://img.shields.io/badge/tests-321%20passing-brightgreen.svg)](#测试)
+[![Tests](https://img.shields.io/badge/tests-327%20passing-brightgreen.svg)](#测试)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](#隐私)
 [![Offline](https://img.shields.io/badge/offline-100%25-brightgreen.svg)](#隐私)
 
@@ -54,6 +54,22 @@ PNG 里写的是 8-bit sRGB 数值，与你在网格里输入的一致。
 - 白底板：层数越多应越暗（单调不增）
 - 黑底板：层数越多应越亮（单调不减，由正向模型 `E ≥ C0` 决定）
 - 只有超出容差的反转才会提示；提示是**弱信号**，用于发现「色块 ↔ 厚度」对应填错
+
+## 两个版本
+
+| | 独立版 | 插件版 |
+|---|---|---|
+| 产物 | `lumina_singlestage_gui.html` | `xwnxzz.handfill-cards-<版本>.lumina-workshop` |
+| 导出 CSV / 板面图 PNG / ZIP | ✅ | ❌（沙箱禁止下载，按钮会隐藏并说明） |
+| 导入 CSV | ✅ | ✅ |
+| 把板面图交给 Lumina | — | ✅ 白底板 / 黑底板 / 校准板当前页 |
+| 主题 | 自带切换 | 跟随 Lumina |
+| 触发 Lumina 的梯度卡/LUT 提取 | — | ❌ 创意工坊 API 没有该通道（详见 [文档](docs/创意工坊模块.md)） |
+
+**推荐用法**：用独立版填数与出图（或插件版填数、交给 Lumina），
+把导出的白/黑底板图丢进 Lumina「耗材管理 → 梯度卡提取」——
+本工具的板面图按官方几何渲染（1340×680 px = 67×34 mm，色块中心与官方
+`sample_boxes` 逐像素重合），**读回来的就是你手填的数值，不用重新输入**。
 
 ## 创意工坊模块（Lumina Studio 2）
 
@@ -191,7 +207,7 @@ tests/
 需要 Node.js。在仓库根目录执行：
 
 ```bash
-node tests/run_all.cjs           # 一次跑完全部（321 项 + Python 自检，单进程无弹窗），推荐
+node tests/run_all.cjs           # 一次跑完全部（327 项 + Python 自检，单进程无弹窗），推荐
 node tests/p0p1p2_test.cjs       # 通过 36，失败 0
 node tests/p0_test.cjs           # 通过 28，失败 0
 node tests/review_fixes_test.cjs # 通过 34，失败 0

@@ -327,65 +327,143 @@
     return n;
   }
 
+  // 宿主里【无法导出文件】：CSP 是 default-src 'none'，下载也会被桌面沙箱拦截，
+  // 而创意工坊 API 里没有「保存文本/二进制文件」这一项。
+  // 导入不受影响（本地文件读取），所以只隐藏导出类按钮，保留导入。
+  var EXPORT_BUTTON_IDS = [
+    "csvOut", "expBoth", "expWhite", "expBlack",
+    "calCsvOutOne", "calCsvOutAll", "calExpOne", "calExpAll",
+  ];
+  function hideBlockedExports() {
+    for (var i = 0; i < EXPORT_BUTTON_IDS.length; i++) {
+      var b = document.getElementById(EXPORT_BUTTON_IDS[i]);
+      if (b) b.style.display = "none";
+    }
+    if (document.getElementById("lfExportNote")) return;
+    var host = document.getElementById("csvOut");
+    var anchor = (host && host.parentNode) || document.body;
+    var note = el("div", {
+      id: "lfExportNote",
+      style:
+        "margin:8px 0 0;padding:8px 10px;border-radius:8px;font:12px/1.6 system-ui,sans-serif;" +
+        "background:var(--lumina-surface-muted,#f5f5f7);color:var(--lumina-text-muted,#6e6e73);" +
+        "border:1px solid var(--lumina-border,#e2e8f0)",
+    }, "在 Lumina 里不能导出文件（沙箱禁止下载）。"
+      + "手填的数据会自动保存在本模块的工程里；"
+      + "需要导出 CSV 或耗材档案 ZIP 时，请用独立版 lumina_singlestage_gui.html。");
+    anchor.appendChild(note);
+  }
+
   function injectHostUi() {
     if (document.getElementById("lfHostBar")) return;
+    hideBlockedExports();
     var bar = el("div", {
       id: "lfHostBar",
       style:
-        "position:fixed;right:14px;bottom:14px;z-index:9999;display:flex;gap:8px;align-items:center;" +
-        "padding:8px 10px;border-radius:10px;font:12px/1.5 system-ui,sans-serif;" +
+        "position:fixed;right:14px;bottom:14px;z-index:9999;max-width:min(420px,92vw);" +
+        "display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:10px;" +
+        "font:12px/1.5 system-ui,sans-serif;" +
         "background:var(--lumina-surface,#fff);color:var(--lumina-text,#0f172a);" +
         "border:1px solid var(--lumina-border,#e2e8f0);box-shadow:0 6px 24px rgba(15,23,42,.18)",
     });
-    var btn = el("button", {
-      type: "button",
-      style:
-        "padding:5px 10px;border-radius:7px;border:1px solid var(--lumina-border,#cbd5e1);" +
-        "background:var(--lumina-accent,#0071e3);color:#fff;cursor:pointer;font:inherit",
-    }, "把当前板面图交给 Lumina");
-    var msg = el("span", { style: "min-width:8em;opacity:.8" }, "");
+    var title = el("div", { style: "font-weight:600" }, "交给 Lumina");
+    bar.appendChild(title);
 
-    btn.addEventListener("click", function () {
-      var target = pickCurrentBoard();
-      if (!target) { msg.textContent = "没有可交接的板面图"; return; }
-      btn.disabled = true;
-      var t0 = Date.now();
-      var finish = function (text) {
-        clearInterval(tick);
-        btn.disabled = false;
-        msg.textContent = text;
-      };
-      // 把等待过程显示出来：卡住时能立刻看出是「没发出去」还是「宿主没回」
-      msg.textContent = "交接中… 0s";
-      var tick = setInterval(function () {
-        var s = Math.round((Date.now() - t0) / 1000);
-        msg.textContent = (s < 3 ? "交接中… " : "已发送，等待 Lumina 处理… ") + s + "s";
-      }, 500);
-      handoffCanvas(target.canvas, target.meta).then(
-        function (res) {
-          if (res && res.status === "needs-confirmation") finish("已在 Lumina 打开替换确认");
-          else finish("已交给 Lumina 转换 ✓");
-        },
-        function (e) {
-          var code = (e && e.code) ? "（" + e.code + "）" : "";
-          finish("失败：" + firstError(e) + code);
-          // 尽力把错误报给宿主，Lumina 侧可能也会显示
-          try {
-            if (bridge.client && bridge.client.status) {
-              bridge.client.status.error({
-                code: (e && e.code) || "handoff-failed",
-                message: firstError(e),
-                retryable: false,
-              }).catch(function () {});
-            }
-          } catch (e2) {}
+    var row = el("div", { style: "display:flex;gap:6px;flex-wrap:wrap" });
+    var btnStyle =
+      "padding:5px 9px;border-radius:7px;border:1px solid var(--lumina-border,#cbd5e1);" +
+      "background:var(--lumina-accent,#0071e3);color:#fff;cursor:pointer;font:inherit";
+    var msg = el("div", { style: "min-height:1.4em;opacity:.85" }, "选择要交给 Lumina 的板面图");
+
+    var targets = [
+      { label: "白底板", canvasId: "prevWhite", sub: "white" },
+      { label: "黑底板", canvasId: "prevBlack", sub: "black" },
+      { label: "校准板当前页", canvasId: "prevCal", sub: "cal" },
+    ];
+    var tick = null;
+    var allBtns = [];          // 直接持有引用，不依赖 childNodes 反查
+    targets.forEach(function (tg) {
+      var b = el("button", { type: "button", style: btnStyle }, tg.label);
+      allBtns.push(b);
+      b.addEventListener("click", function () {
+        var target = boardFor(tg.sub);
+        if (!target || !target.canvas || !target.canvas.width) {
+          msg.textContent = tg.label + "还没有内容";
+          return;
         }
-      );
+        disableAll(true);
+        var t0 = Date.now();
+        if (tick) clearInterval(tick);
+        msg.textContent = "交接中… 0s";
+        tick = setInterval(function () {
+          var s = Math.round((Date.now() - t0) / 1000);
+          msg.textContent = (s < 3 ? "交接中… " : "已发送，等待 Lumina 处理… ") + s + "s";
+        }, 500);
+        handoffCanvas(target.canvas, target.meta).then(
+          function (res) {
+            disableAll(false);
+            if (tick) { clearInterval(tick); tick = null; }
+            msg.textContent = (res && res.status === "needs-confirmation")
+              ? tg.label + "：已在 Lumina 打开替换确认"
+              : tg.label + " 已交给 Lumina ✓";
+          },
+          function (e) {
+            disableAll(false);
+            if (tick) { clearInterval(tick); tick = null; }
+            msg.textContent = "失败：" + firstError(e) + ((e && e.code) ? "（" + e.code + "）" : "");
+            try {
+              if (bridge.client && bridge.client.status) {
+                bridge.client.status.error({
+                  code: (e && e.code) || "handoff-failed",
+                  message: firstError(e),
+                  retryable: false,
+                }).catch(function () {});
+              }
+            } catch (e2) {}
+          }
+        );
+      });
+      row.appendChild(b);
     });
+    function disableAll(on) { allBtns.forEach(function (b) { b.disabled = on; }); }
 
-    bar.appendChild(btn);
+    bar.appendChild(row);
     bar.appendChild(msg);
+    var hint = el("div", { style: "opacity:.7" },
+      "在 Lumina 里用「耗材管理 → 梯度卡提取」读取这两张板面图，即可得到你手填的数值。"
+      + "若要导出 CSV / 耗材档案 ZIP，请用独立版。");
+    bar.appendChild(hint);
     document.body.appendChild(bar);
+  }
+
+  // 按用途取画布：白底板 / 黑底板 / 校准板当前页
+  function boardFor(which) {
+    if (which === "cal") {
+      var cal = document.getElementById("prevCal");
+      if (!cal || !cal.width) return null;
+      var mode = null, pdef = null;
+      try { mode = calMode(); pdef = calPageDef(); } catch (e) { return null; }
+      if (!mode || !pdef) return null;
+      var total = pdef.data + 2 * pdef.pad;
+      var sideMm = 2 * CAL_MARGIN_MM + total * mode.block + (total - 1) * mode.gap;
+      return {
+        canvas: cal,
+        meta: {
+          projectId: "cal-" + mode.key + "-" + ((typeof cal !== "undefined" ? 0 : 0)),
+          widthMm: sideMm, heightMm: sideMm,
+        },
+      };
+    }
+    var c = document.getElementById(which === "black" ? "prevBlack" : "prevWhite");
+    if (!c || !c.width) return null;
+    return {
+      canvas: c,
+      meta: {
+        projectId: "gradient-" + which,
+        widthMm: 67, heightMm: 34,
+        totalThicknessMm: 1.0 + 25 * 0.08,
+      },
+    };
   }
 
   // 当前该交接哪张图：按工具当前的模式与页面决定。

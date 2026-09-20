@@ -277,9 +277,15 @@ console.log("\n=== 4) 协议仿真（假宿主）===");
   };
   const made = [];
   const themeBtn = { style: {} };          // 工具自带的主题按钮，宿主模式应被隐藏
+  // 导出类按钮：宿主里无法写文件，必须被隐藏；导入不受影响（保留可见）
+  const EXPORT_IDS = ["csvOut","expBoth","expWhite","expBlack",
+                      "calCsvOutOne","calCsvOutAll","calExpOne","calExpAll"];
+  const fakeEls = {};
+  EXPORT_IDS.forEach(id => { fakeEls[id] = { id, style: {}, parentNode: { appendChild() {} } }; });
+  fakeEls.csvIn = { id: "csvIn", style: {} };   // 导入应保持可见
   const fakeDocument = {
     documentElement,
-    getElementById: (id) => (id === "themeBtn" ? themeBtn : null),
+    getElementById: (id) => (id === "themeBtn" ? themeBtn : (fakeEls[id] || null)),
     createElement: (tag) => {
       const n = { tagName: tag, style: {}, dataset: {}, children: [],
                   setAttribute(k, v) { this[k] = v; }, addEventListener(t, f) { (this._h ||= {})[t] = f; },
@@ -341,6 +347,20 @@ console.log("\n=== 4) 协议仿真（假宿主）===");
   }));
   ok(bridge.inHost === true, "收到 connect 后 inHost = true（端口在 event.ports 上）");
   ok(bridge.client !== null, "建立 RPC 客户端（读 event.ports[0]）");
+  // ── 两个版本的差异：插件版不能导出文件（沙箱拦下载），改为交接给 Lumina ──
+  ok(EXPORT_IDS.every(id => fakeEls[id].style.display === "none"),
+     "插件版隐藏全部导出按钮（8 个）",
+     EXPORT_IDS.filter(id => fakeEls[id].style.display !== "none").join(","));
+  ok(fakeEls.csvIn.style.display !== "none", "插件版保留 CSV 导入（本地文件读取不受限）");
+  ok(made.some(n => n.id === "lfExportNote"), "插件版注入「不能导出」的说明");
+  ok(made.some(n => n.id === "lfHostBar"), "插件版注入交接面板");
+  const hb = made.find(n => n.id === "lfHostBar");
+  const btnCount = made.filter(n => n.tagName === "button").length;
+  ok(btnCount >= 3, "交接面板提供 3 个目标（白底板 / 黑底板 / 校准板当前页）", btnCount);
+  ok(made.some(n => typeof n.textContent === "string" && n.textContent === "白底板") &&
+     made.some(n => typeof n.textContent === "string" && n.textContent === "黑底板") &&
+     made.some(n => typeof n.textContent === "string" && n.textContent === "校准板当前页"),
+     "三个按钮的文案正确");
 
   // ---- 模块应当发出 ui.getState 与 lifecycle.ready ----
   const wait = (ms) => new Promise(r => setTimeout(r, ms));
