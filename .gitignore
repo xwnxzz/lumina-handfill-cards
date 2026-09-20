@@ -17,3 +17,6 @@ __pycache__/
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# 创意工坊模块的构建产物（由 workshop/build.cjs 生成）
+workshop/dist/

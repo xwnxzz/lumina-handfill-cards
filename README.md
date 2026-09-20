@@ -9,7 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Content: CC BY-NC-SA 4.0](https://img.shields.io/badge/Content-CC%20BY--NC--SA%204.0-lightgrey.svg)](CONTENT-LICENSE.md)
 [![Release](https://img.shields.io/github/v/release/xwnxzz/lumina-handfill-cards?label=release&color=blue)](https://github.com/xwnxzz/lumina-handfill-cards/releases/latest)
-[![Tests](https://img.shields.io/badge/tests-235%20passing-brightgreen.svg)](#测试)
+[![Tests](https://img.shields.io/badge/tests-306%20passing-brightgreen.svg)](#测试)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](#隐私)
 [![Offline](https://img.shields.io/badge/offline-100%25-brightgreen.svg)](#隐私)
 
@@ -55,6 +55,22 @@ PNG 里写的是 8-bit sRGB 数值，与你在网格里输入的一致。
 - 黑底板：层数越多应越亮（单调不减，由正向模型 `E ≥ C0` 决定）
 - 只有超出容差的反转才会提示；提示是**弱信号**，用于发现「色块 ↔ 厚度」对应填错
 
+## 创意工坊模块（Lumina Studio 2）
+
+本工具同时是 **Lumina Studio 创意工坊模块**，可在
+「创意工坊 → 安装本地模块包」选 `xwnxzz.handfill-cards-<版本>.lumina-workshop`，
+或用「从 GitHub Release 安装」填本仓库地址装入。
+
+- 打包：`node workshop/build.cjs` → `workshop/dist/`
+- 说明：[`docs/创意工坊模块.md`](docs/创意工坊模块.md)
+- 测试：`node tests/workshop_package_test.cjs`（71 项，含用假宿主跑通握手与交接）
+
+模块内除了原有全部功能，还会在右下角出现「把当前板面图交给 Lumina」按钮，
+把板面图连同物理尺寸与网格节距交给 Lumina 转换打印。
+只申请 `project.storage` 与 `handoff.image` 两项权限。
+
+> 适配层是按官方公开协议**自行实现**的（官方 SDK 为 GPL-3.0，捆绑会让产物感染 GPL），
+> 因此模块产物仍是 MIT。若将来要按官方指南捆绑官方 SDK，见文档末尾的说明。
 ## 功能
 
 ### 模式一：耗材管理 · 梯度卡填色（3 × 6 = 18 格单阶板）
@@ -175,7 +191,7 @@ tests/
 需要 Node.js。在仓库根目录执行：
 
 ```bash
-node tests/run_all.cjs           # 一次跑完全部（单进程、无弹窗），推荐
+node tests/run_all.cjs           # 一次跑完全部（306 项 + Python 自检，单进程无弹窗），推荐
 node tests/p0p1p2_test.cjs       # 通过 36，失败 0
 node tests/p0_test.cjs           # 通过 28，失败 0
 node tests/review_fixes_test.cjs # 通过 34，失败 0
