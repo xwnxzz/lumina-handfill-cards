@@ -76,10 +76,14 @@ function sliceArr(marker) {
   }
   throw new Error("括号不配对 " + marker);
 }
-const code = "const SLOT_COLORS = " + sliceArr("const SLOT_COLORS")
+const code = "const GRAD_SPEC = " + sliceArr("const GRAD_SPEC")
+  + ";\nconst SLOT_COLORS = " + sliceArr("const SLOT_COLORS")
   + ";\nconst CAL_MODES = " + sliceArr("const CAL_MODES") + ";";
-const mod = new Function(code + "\nreturn {SLOT_COLORS, CAL_MODES};")();
-const { SLOT_COLORS, CAL_MODES } = mod;
+const pxm = /const PX_PER_MM\s*=\s*([\d.]+)/.exec(html);
+if (!pxm) throw new Error("找不到 PX_PER_MM");
+const code2 = code + "\nconst PX_PER_MM = " + pxm[1] + ";\nfunction stepLayers(){ return GRAD_SPEC.step_layers; }";
+const mod = new Function(code2 + "\nreturn {GRAD_SPEC, SLOT_COLORS, CAL_MODES, PX_PER_MM, stepLayers};")();
+const { GRAD_SPEC, SLOT_COLORS, CAL_MODES, PX_PER_MM, stepLayers } = mod;
 const byKey = k => CAL_MODES.find(m => m.key === k);
 
 let pass = 0, fail = 0;
@@ -224,6 +228,71 @@ console.log("\n=== 5) 正向模型参数结构 vs 官方 stage_B ===");
   ok(OFFICIAL_STAGE_B.k_height_scale_gamma > 0, "官方有 k_height_scale_gamma（层高缩放，我们未实现）");
   ok(OFFICIAL_STAGE_B.E.length === 3 && OFFICIAL_STAGE_B.k.length === 3,
      "官方 E / k 都是 3 通道", `${OFFICIAL_STAGE_B.E.length}/${OFFICIAL_STAGE_B.k.length}`);
+}
+
+/* ===== 6. 梯度卡（单阶板）规格：官方 material.json 的 source.spec 与 sample_boxes ===== */
+console.log("\n=== 6) 梯度卡规格 vs 官方 material.json（174 个耗材全部一致）===");
+{
+  // 官方 174 个 material.json 的 source.spec 完全相同，sample_boxes 也完全相同
+  const O = {
+    spec: { grid_cols: 6, grid_rows: 3, block_mm: 10.0, gap_mm: 1.0, margin_mm: 1.0,
+            pixel_mm: 1.0, layer_height_mm: 0.08, base_mm: 1.0, max_step_layers: 25,
+            step_layers: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,25], shrink_xy_mm: 0.02 },
+    warp_width_px: 1340, warp_height_px: 680, px_per_mm: 20,
+    sample_count: 36, per_substrate: 18,
+    box_inset_px: 36, box_size_px: 128,
+    // 官方 sample_boxes 的 thickness_layers 按 row-major 排布
+    thickness_by_rc: [[0,1,2,3,4,5],[6,7,8,9,10,11],[12,13,14,15,16,25]],
+    // 官方识别到的全部朝向（我们只实现了 flip_horizontal 一种）
+    orientations: ["identity","flip_horizontal","flip_vertical","rotate_90_ccw",
+                   "rotate_90_cw","transpose","transverse"],
+  };
+  const gs = GRAD_SPEC;
+  // 6.1 字段集必须与官方 spec 完全一致
+  const miss = Object.keys(O.spec).filter(k => !(k in gs));
+  const extra = Object.keys(gs).filter(k => !(k in O.spec));
+  ok(miss.length === 0, "GRAD_SPEC 不缺官方 spec 字段", JSON.stringify(miss));
+  ok(extra.length === 0, "GRAD_SPEC 没有官方 spec 之外的字段", JSON.stringify(extra));
+  // 6.2 11 个字段逐个取值比对
+  for (const k of Object.keys(O.spec)) {
+    ok(eq(gs[k], O.spec[k]), `spec.${k} = ${JSON.stringify(O.spec[k])}`, JSON.stringify(gs[k]));
+  }
+  // 6.3 图像尺寸与 px/mm
+  ok(PX_PER_MM === O.px_per_mm, `PX_PER_MM = ${O.px_per_mm}`, PX_PER_MM);
+  const Wmm = 2*gs.margin_mm + gs.grid_cols*gs.block_mm + (gs.grid_cols-1)*gs.gap_mm;
+  const Hmm = 2*gs.margin_mm + gs.grid_rows*gs.block_mm + (gs.grid_rows-1)*gs.gap_mm;
+  ok(Wmm * PX_PER_MM === O.warp_width_px, `板宽 ${Wmm}mm × ${PX_PER_MM} = ${O.warp_width_px}px`,
+     Wmm * PX_PER_MM);
+  ok(Hmm * PX_PER_MM === O.warp_height_px, `板高 ${Hmm}mm × ${PX_PER_MM} = ${O.warp_height_px}px`,
+     Hmm * PX_PER_MM);
+  // 6.4 采样数
+  const n = stepLayers().length;
+  ok(n * 2 === O.sample_count, `两基底合计 ${O.sample_count} 个样本`, n * 2);
+  ok(n === O.per_substrate, `每基底 ${O.per_substrate} 个`, n);
+  // 6.5 18 个色块中心必须与官方 sample_box 中心逐像素重合
+  ok(O.box_inset_px / PX_PER_MM === 1.8, "官方采样框内缩 1.8mm");
+  ok(O.box_size_px / PX_PER_MM === 6.4, "官方采样框 6.4mm（取 10mm 色块中心 64%）");
+  let off = 0;
+  for (let r = 0; r < gs.grid_rows; r++) {
+    for (let c = 0; c < gs.grid_cols; c++) {
+      // 本工具：色块左上 + 半格 = 中心
+      const myCx = (gs.margin_mm + c*(gs.block_mm+gs.gap_mm)) * PX_PER_MM + gs.block_mm*PX_PER_MM/2;
+      const myCy = (gs.margin_mm + r*(gs.block_mm+gs.gap_mm)) * PX_PER_MM + gs.block_mm*PX_PER_MM/2;
+      // 官方：内缩后取框中心
+      const t = O.thickness_by_rc[r][c];
+      const layers = stepLayers();
+      const canon = r * gs.grid_cols + c;
+      if (layers[canon] !== t) off++;
+      const offCx = gs.margin_mm*PX_PER_MM + c*(gs.block_mm+gs.gap_mm)*PX_PER_MM + O.box_inset_px + O.box_size_px/2;
+      const offCy = gs.margin_mm*PX_PER_MM + r*(gs.block_mm+gs.gap_mm)*PX_PER_MM + O.box_inset_px + O.box_size_px/2;
+      if (Math.abs(myCx - offCx) > 1e-9 || Math.abs(myCy - offCy) > 1e-9) off++;
+    }
+  }
+  ok(off === 0, "18 个色块中心与官方采样框中心全部重合，且厚度层数与官方一致", off);
+  // 6.6 官方支持的朝向远多于我们实现的一种
+  ok(O.orientations.length === 7, "官方识别 7 种朝向（本项目只实现了 flip_horizontal）",
+     O.orientations.length);
+  ok(O.orientations.includes("flip_horizontal"), "我们实现的 flip_horizontal 在官方朝向表内");
 }
 
 console.log(`\n通过 ${pass}，失败 ${fail}`);

@@ -9,7 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Content: CC BY-NC-SA 4.0](https://img.shields.io/badge/Content-CC%20BY--NC--SA%204.0-lightgrey.svg)](CONTENT-LICENSE.md)
 [![Release](https://img.shields.io/github/v/release/xwnxzz/lumina-handfill-cards?label=release&color=blue)](https://github.com/xwnxzz/lumina-handfill-cards/releases/latest)
-[![Tests](https://img.shields.io/badge/tests-212%20passing-brightgreen.svg)](#测试)
+[![Tests](https://img.shields.io/badge/tests-235%20passing-brightgreen.svg)](#测试)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](#隐私)
 [![Offline](https://img.shields.io/badge/offline-100%25-brightgreen.svg)](#隐私)
 
@@ -164,7 +164,7 @@ tests/
   p0_test.cjs                 28 项（校准板持久化 + CSV 兼容）
   review_fixes_test.cjs       34 项（第一轮外部代码评审的发现）
   review2_fixes_test.cjs      39 项（第二轮评审：线性 CSV 往返、规格契约、映射链）
-  official_spec_test.cjs      75 项（与官方 2.0 资源逐项核对板面几何 / 槽位 / 四角标 / 调色板）
+  official_spec_test.cjs      98 项（与官方 2.0 资源逐项核对：校准板几何 / 槽位 / 四角标 / 调色板 + 梯度卡规格）
   calzip_test.cjs             ZIP 命名与条目
   zip2_test.cjs               ZIP 结构
   shot.ps1                    无头浏览器截图（验证用）
@@ -179,7 +179,7 @@ node tests/p0p1p2_test.cjs       # 通过 36，失败 0
 node tests/p0_test.cjs           # 通过 28，失败 0
 node tests/review_fixes_test.cjs # 通过 34，失败 0
 node tests/review2_fixes_test.cjs # 通过 39，失败 0
-node tests/official_spec_test.cjs # 通过 75，失败 0（需本机装有官方 2.0 才更有意义，纯常量校验）
+node tests/official_spec_test.cjs # 通过 98，失败 0（纯常量校验，无需本机安装）
 node tests/calzip_test.cjs
 node tests/zip2_test.cjs
 ```
