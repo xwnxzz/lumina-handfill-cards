@@ -59,6 +59,46 @@ from typing import Dict, List, Sequence, Tuple
 
 import numpy as np
 
+# ------------------------------------------- 官方采样框几何（实测自官方 2.0 资源）
+# 官方 material.json 的 material_summary.sample_boxes 是自动提取流程在照片上取色的窗口。
+# 实测本机官方 2.0 的 174 个耗材档案，取值完全一致：
+#   每个 10mm 色块取【正中心 6.4mm】（= 色块的 64%），四边各内缩 1.8mm；
+#   板面图 1340x680 px => 20 px/mm。
+# 本项目是手工测量、不做照片取样，但档案里仍按官方口径写出这些字段，
+# 以便生成的档案与官方结构完全对齐。
+GRAD_BOX_INSET_MM = 1.8        # 采样框相对色块左上角的内缩
+GRAD_BOX_SIZE_MM = 6.4         # 采样框边长
+GRAD_PX_PER_MM = 20.0          # 1340 / 67mm
+
+
+def grad_board_size_px(spec: dict):
+    """由规格推出板面图尺寸（px）。官方 warp = 1340 x 680。"""
+    w_mm = (2 * spec["margin_mm"] + spec["grid_cols"] * spec["block_mm"]
+            + (spec["grid_cols"] - 1) * spec["gap_mm"])
+    h_mm = (2 * spec["margin_mm"] + spec["grid_rows"] * spec["block_mm"]
+            + (spec["grid_rows"] - 1) * spec["gap_mm"])
+    return int(round(w_mm * GRAD_PX_PER_MM)), int(round(h_mm * GRAD_PX_PER_MM))
+
+
+def grad_sample_boxes(spec: dict):
+    """按官方口径生成 18 个采样框（row-major，厚层数取自 step_layers）。"""
+    size = int(round(GRAD_BOX_SIZE_MM * GRAD_PX_PER_MM))
+    boxes = []
+    for r in range(spec["grid_rows"]):
+        for c in range(spec["grid_cols"]):
+            canon = r * spec["grid_cols"] + c
+            x = (spec["margin_mm"] + c * (spec["block_mm"] + spec["gap_mm"])
+                 + GRAD_BOX_INSET_MM) * GRAD_PX_PER_MM
+            y = (spec["margin_mm"] + r * (spec["block_mm"] + spec["gap_mm"])
+                 + GRAD_BOX_INSET_MM) * GRAD_PX_PER_MM
+            boxes.append({
+                "row": r, "col": c,
+                "x": int(round(x)), "y": int(round(y)),
+                "width": size, "height": size,
+                "thickness_layers": spec["step_layers"][canon],
+            })
+    return boxes
+
 # ---------------------------------------------------------------- 规格常量
 SPEC = {
     "grid_cols": 6,
@@ -362,6 +402,7 @@ def build_stage_a(name: str, fit: Dict, warns: List[str],
 
 def build_material(name: str, brand: str, fit: Dict, warns: List[str],
                    stage_a: dict, spec: dict) -> dict:
+    _W_PX, _H_PX = grad_board_size_px(spec)
     est_rgb = [int(round(float(v) * 255)) for v in linear_to_srgb(fit["E"])]
     w0 = [int(round(float(v) * 255)) for v in linear_to_srgb(fit["C0_white"])]
     b0 = [int(round(float(v) * 255)) for v in linear_to_srgb(fit["C0_black"])]
@@ -389,7 +430,11 @@ def build_material(name: str, brand: str, fit: Dict, warns: List[str],
             "grid_rows": spec["grid_rows"],
             "grid_cols": spec["grid_cols"],
             "layer_height_mm": spec["layer_height_mm"],
+            # 以下三项按官方 material.json 的口径写出（官方 1340x680 / 128px 框）
+            "warp_width_px": _W_PX,
+            "warp_height_px": _H_PX,
             "thickness_layers": list(spec["step_layers"]),
+            "sample_boxes": grad_sample_boxes(spec),
             "white_zero_rgb": w0,
             "black_zero_rgb": b0,
             "estimated_rgb": est_rgb,
@@ -535,6 +580,31 @@ def selftest() -> int:
         good = abs(got - want) <= tol
         ok &= good
         print(f"  {nm:<22} 实测 {got:9.4f} | 应为 {want:9.4f}   {'OK' if good else 'DIFF'}")
+    print()
+    # ---- 板面图尺寸与官方采样框几何（实测自官方 2.0 的 material.json）----
+    print()
+    print("板面规格定点校验（warp / sample_boxes）")
+    _w, _h = grad_board_size_px(SPEC)
+    _boxes = grad_sample_boxes(SPEC)
+    for _nm, _got, _want in [("warp 尺寸", (_w, _h), (1340, 680)),
+                             ("采样框个数", len(_boxes), 18)]:
+        _good = _got == _want
+        ok &= _good
+        print(f"  {_nm:<22} 实测 {str(_got):<16} 应为 {str(_want):<16}"
+              f" {"OK" if _good else "DIFF"}")
+    # 官方 4 个采样框的实测值（x, y, width, height, thickness_layers）
+    _off = {(0, 0): (56, 56, 128, 128, 0), (0, 1): (276, 56, 128, 128, 1),
+            (0, 5): (1156, 56, 128, 128, 5), (2, 5): (1156, 496, 128, 128, 25)}
+    for _b in _boxes:
+        _k = (_b["row"], _b["col"])
+        if _k in _off:
+            _got = (_b["x"], _b["y"], _b["width"], _b["height"],
+                    _b["thickness_layers"])
+            _good = _got == _off[_k]
+            ok &= _good
+            print(f"  sample_box {str(_k):<8} 实测 {str(_got):<26}"
+                  f" 应为 {str(_off[_k]):<26} {"OK" if _good else "DIFF"}")
+
     print()
     print("结论：" + ("模型实现与官方一致，可放心使用。" if ok else "存在差异，请勿直接使用！"))
     print()
