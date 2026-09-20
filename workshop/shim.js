@@ -211,14 +211,23 @@
   }, READY_RETRY_MS);
 
   /* -------------------------------------------------------- 宿主模式装配 */
+  // 同步导出 PNG。刻意【不用】canvas.toBlob：它的回调在沙箱上下文里有可能一直不触发，
+  // 而这条路径原先没有任何超时 —— 真机上就表现为按钮永远停在「交接中…」。
+  // toDataURL 是同步的，不存在悬挂路径。
   function canvasToPng(canvas) {
-    return new Promise(function (resolve, reject) {
-      if (!canvas || !canvas.toBlob) return reject(new Error("画布不可用"));
-      canvas.toBlob(function (blob) {
-        if (!blob) return reject(new Error("导出 PNG 失败"));
-        blob.arrayBuffer().then(resolve, reject);
-      }, "image/png");
-    });
+    try {
+      if (!canvas || !canvas.width || !canvas.height) throw new Error("画布为空");
+      var url = canvas.toDataURL("image/png");
+      var comma = url.indexOf(",");
+      if (comma < 0) throw new Error("不是 data URL");
+      var bin = atob(url.slice(comma + 1));
+      var bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      if (bytes.length < 24) throw new Error("PNG 太短");
+      return Promise.resolve(bytes.buffer);
+    } catch (e) {
+      return Promise.reject(new Error("导出 PNG 失败：" + firstError(e)));
+    }
   }
 
   function firstError(e) {
@@ -243,9 +252,31 @@
     if (b) b.style.display = "none";
   }
 
+  // 交接永不悬挂：无论卡在哪一步，45 秒内一定会给出结论。
+  // （宿主自身对 handoff 的超时是 120 秒；我们提前失败，是为了让用户看到明确原因。）
+  var HANDOFF_HARD_TIMEOUT_MS = 45000;
+  bridge.handoffTimeoutMs = HANDOFF_HARD_TIMEOUT_MS;   // 可覆盖（测试用）
   function handoffCanvas(canvas, meta) {
     var client = bridge.client;
     if (!client) return Promise.reject(new Error("不在 Lumina 宿主中"));
+    var work = handoffOnce(canvas, meta);
+    return new Promise(function (resolve, reject) {
+      var done = false;
+      var timer = setTimeout(function () {
+        if (done) return;
+        done = true;
+        var e = new Error("Lumina 在 " + Math.round(bridge.handoffTimeoutMs / 1000) +
+                          " 秒内没有回应（PNG 已发出，方法 handoff.image）");
+        e.code = "CLIENT_HANDOFF_TIMEOUT";
+        reject(e);
+      }, bridge.handoffTimeoutMs);
+      work.then(function (r) { if (!done) { done = true; clearTimeout(timer); resolve(r); } },
+                function (e) { if (!done) { done = true; clearTimeout(timer); reject(e); } });
+    });
+  }
+
+  function handoffOnce(canvas, meta) {
+    var client = bridge.client;
     return canvasToPng(canvas).then(function (buf) {
       var payload = {
         moduleId: MODULE_ID,
@@ -318,16 +349,36 @@
       var target = pickCurrentBoard();
       if (!target) { msg.textContent = "没有可交接的板面图"; return; }
       btn.disabled = true;
-      msg.textContent = "交接中…";
+      var t0 = Date.now();
+      var finish = function (text) {
+        clearInterval(tick);
+        btn.disabled = false;
+        msg.textContent = text;
+      };
+      // 把等待过程显示出来：卡住时能立刻看出是「没发出去」还是「宿主没回」
+      msg.textContent = "交接中… 0s";
+      var tick = setInterval(function () {
+        var s = Math.round((Date.now() - t0) / 1000);
+        msg.textContent = (s < 3 ? "交接中… " : "已发送，等待 Lumina 处理… ") + s + "s";
+      }, 500);
       handoffCanvas(target.canvas, target.meta).then(
         function (res) {
-          btn.disabled = false;
-          if (res && res.status === "needs-confirmation") msg.textContent = "已在 Lumina 打开替换确认";
-          else msg.textContent = "已交给 Lumina 转换 ✓";
+          if (res && res.status === "needs-confirmation") finish("已在 Lumina 打开替换确认");
+          else finish("已交给 Lumina 转换 ✓");
         },
         function (e) {
-          btn.disabled = false;
-          msg.textContent = "失败：" + firstError(e);
+          var code = (e && e.code) ? "（" + e.code + "）" : "";
+          finish("失败：" + firstError(e) + code);
+          // 尽力把错误报给宿主，Lumina 侧可能也会显示
+          try {
+            if (bridge.client && bridge.client.status) {
+              bridge.client.status.error({
+                code: (e && e.code) || "handoff-failed",
+                message: firstError(e),
+                retryable: false,
+              }).catch(function () {});
+            }
+          } catch (e2) {}
         }
       );
     });

@@ -315,10 +315,12 @@ console.log("\n=== 4) 协议仿真（假宿主）===");
   // ---- 宿主回 connect（带 MessagePort）----
   const { port1, port2 } = new MessageChannel();
   const fromModule = [];
+  let autoReply = true;   // 置 false 模拟「宿主收到但不回应」，用于验证不悬挂
   // 假宿主：自动应答除 ui.getState 以外的请求（ui.getState 由测试手工回，以验证响应处理）
   port1.addEventListener("message", (ev) => {
     const d = ev.data;
     fromModule.push(d);
+    if (!autoReply) return;
     if (d && d.kind === "request" && d.method !== "ui.getState") {
       port1.postMessage({
         protocol: "lumina-workshop-rpc", version: 1, kind: "response",
@@ -394,17 +396,21 @@ console.log("\n=== 4) 协议仿真（假宿主）===");
       });
       setTimeout(() => {
         ok(documentElement.lang === "zh-CN", "响应里的状态也被应用", documentElement.lang);
+        // 源码层：不能再用 canvas.toBlob（那条路径没有超时，会永远卡在「交接中…」）
+        ok(!/\.toBlob\s*\(/.test(shim), "适配层不再使用 canvas.toBlob（同步导出，无悬挂路径）");
+        ok(/CLIENT_HANDOFF_TIMEOUT/.test(shim), "有交接硬超时");
+        ok(/handoffTimeoutMs/.test(shim), "超时可覆盖（可测）");
+        ok(/已发送，等待 Lumina 处理/.test(shim), "等待过程对用户可见");
+
 
         // ---- handoffCanvas：检查交接对象字段 ----
-        // 必须是真 PNG：宿主会读 IHDR 校验像素尺寸，还会用 createImageBitmap 解码
+        // 必须是真 PNG：宿主会读 IHDR 校验像素尺寸，还会用 createImageBitmap 解码。
+        // 适配层走同步的 toDataURL（不用 toBlob —— 它的回调有可能一直不触发）。
         const pngBytes = makePng(1340, 680);
+        const pngDataUrl = "data:image/png;base64," + pngBytes.toString("base64");
         const fakeCanvas = {
           width: 1340, height: 680,
-          toBlob: (cb) => cb({ arrayBuffer: () => {
-            const ab = new ArrayBuffer(pngBytes.length);
-            new Uint8Array(ab).set(pngBytes);
-            return Promise.resolve(ab);
-          } }),
+          toDataURL: () => pngDataUrl,
         };
         bridge.handoffCanvas(fakeCanvas, {
           projectId: "gradient-white", widthMm: 67, heightMm: 34,
@@ -465,9 +471,31 @@ console.log("\n=== 4) 协议仿真（假宿主）===");
               });
               ok(bad.some(e => e.startsWith("handoff-layout-invalid")),
                  "校验器能抓出 layout 与尺寸不自洽（67 ≠ 6×11）", JSON.stringify(bad));
+
+              // 行为层：宿主「收到但不回应」时，必须在硬超时后失败 —— 绝不悬挂。
+              // 放在成功路径之后跑，避免与它的自动应答互相干扰。
+              autoReply = false;
+              bridge.handoffTimeoutMs = 300;
+              const tHang = Date.now();
+              bridge.handoffCanvas(
+                { width: 1340, height: 680, toDataURL: () => pngDataUrl },
+                { projectId: "x", widthMm: 67, heightMm: 34 }
+              ).then(
+                () => ok(false, "宿主不回时应当失败", "竟然成功了"),
+                (herr) => {
+                  const dt = Date.now() - tHang;
+                  ok(herr && herr.code === "CLIENT_HANDOFF_TIMEOUT",
+                     "宿主不回时按硬超时失败（不悬挂）",
+                     herr ? ((herr.code || "no-code") + " | " + herr.message) : "没有报错");
+                  ok(dt >= 250 && dt < 5000, "在超时附近返回（不是永久等待）", dt + "ms");
+                }
+              ).finally(() => {
+                autoReply = true;
+                bridge.handoffTimeoutMs = 45000;
+                console.log(`\n通过 ${pass}，失败 ${fail}`);
+                process.exit(fail ? 1 : 0);
+              });
             }
-            console.log(`\n通过 ${pass}，失败 ${fail}`);
-            process.exit(fail ? 1 : 0);
           }, 30);
         }, (e) => { ok(false, "handoffCanvas 抛错", String(e && e.message)); 
           console.log(`\n通过 ${pass}，失败 ${fail}`); process.exit(1); });
