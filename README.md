@@ -175,6 +175,7 @@ tests/
 需要 Node.js。在仓库根目录执行：
 
 ```bash
+node tests/run_all.cjs           # 一次跑完全部（单进程、无弹窗），推荐
 node tests/p0p1p2_test.cjs       # 通过 36，失败 0
 node tests/p0_test.cjs           # 通过 28，失败 0
 node tests/review_fixes_test.cjs # 通过 34，失败 0

@@ -52,6 +52,22 @@ node tests/zip2_test.cjs
 | 0 层默认基准 | 自动填的 255 冒充实测、被计入「已填」、写进 CSV → Python 拿到假 C0 | 标记为「默认基准」：不计入已测、不写入 CSV、体检明确提示未实测 |
 | CSV 5 列格式 | 只校验算出的 index | 分别校验 `row` / `col` 在 `[0, data-1]` |
 
+## 一次性跑完全部测试（推荐）
+
+```powershell
+node tests/run_all.cjs
+```
+
+`run_all.cjs` 只启动**一个**进程，内部所有子进程都用 `windowsHide: true`，
+一次跑完 7 个 Node 测试脚本 + `tools/lumina_profile_writer.py --selftest`，
+最后打印汇总表并以非 0 退出码表示失败。
+
+> **为什么要这样**：在 Windows 上逐个调用 `node.exe` 时，每个子进程都会创建自己的
+> 可见控制台窗口 —— 连续验证会让人屏幕上不断弹窗。请优先用 `run_all.cjs`，
+> 不要在一个循环里逐个 `node tests/xxx.cjs`。
+> 若从其他程序调用，可用
+> `Start-Process node -ArgumentList "tests\run_all.cjs" -WindowStyle Hidden -Wait`。
+
 ## 手工验证辅助
 
 `shot.ps1` 用无头 Edge 截图，用于人工核对界面渲染，**不属于自动化测试**：
