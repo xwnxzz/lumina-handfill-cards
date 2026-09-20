@@ -174,6 +174,15 @@ select:focus,input[type=number]:focus{outline:none;border-color:var(--acc);
         <span class="hint" style="margin:0">（格式：<code>substrate,thickness_mm,r,g,b</code>）</span>
         <span class="hint" style="margin:0" id="gradSaveState"></span>
       </div>
+      <div class="row" style="margin-bottom:12px">
+        <span class="hint" style="margin:0">耗材档案：</span>
+        <input id="matBrand" placeholder="品牌" aria-label="品牌"
+               style="font-size:12px;width:9em" title="会成为 Lumina 耗材库里的分组名">
+        <input id="matName" placeholder="耗材名称" aria-label="耗材名称"
+               style="font-size:12px;width:11em" title="会成为 Lumina 耗材库里的耗材名">
+        <button class="sec" id="matZipOut">导出耗材档案 ZIP（可直接导入 Lumina）</button>
+        <span class="hint" style="margin:0">需 36 格全部实测</span>
+      </div>
       <div class="boards">
         <div class="board"><h3>白底板（substrate = white）</h3><div class="grid" id="gridWhite"></div></div>
         <div class="board"><h3>黑底板（substrate = black）</h3><div class="grid" id="gridBlack"></div></div>
@@ -753,6 +762,457 @@ function zipCrc32(bytes) {
   return (c ^ 0xFFFFFFFF) >>> 0;
 }
 const zipUtf8 = new TextEncoder();
+/* ============================================================================
+ * 导出「可直接导入 Lumina Studio 的耗材档案 ZIP」
+ * ----------------------------------------------------------------------------
+ * 与 tools/lumina_profile_writer.py 产物完全同构，只是搬到浏览器里做：
+ *   lumina_material_export.json
+ *   lumina_material_bundle.json
+ *   materials/<品牌>/<耗材名>/material.json          (kind=lumina_stage_a_material, schema 1.1)
+ *   materials/<品牌>/<耗材名>/stage_A_parameters.json (param_type=stage_A)
+ * 导入路径：Lumina Studio → 耗材管理 → 耗材库 → 「导入耗材 ZIP」
+ * ========================================================================== */
+
+/* ---------------- SHA-256（优先 WebCrypto，纯 JS 兜底） ---------------- */
+function sha256Rotr(x, n) { return ((x >>> n) | (x << (32 - n))) >>> 0; }
+function sha256HexJS(bytes) {
+  const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+             0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+             0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+             0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+             0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+             0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+             0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+             0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  let H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  const l = bytes.length, bitLen = l * 8;
+  const pad = new Uint8Array(((((l + 9) >> 6) + 1) << 6));
+  pad.set(bytes);
+  pad[l] = 0x80;
+  const dv = new DataView(pad.buffer);
+  dv.setUint32(pad.length - 8, Math.floor(bitLen / 4294967296), false);
+  dv.setUint32(pad.length - 4, bitLen >>> 0, false);
+  const w = new Uint32Array(64);
+  for (let off = 0; off < pad.length; off += 64) {
+    for (let i = 0; i < 16; i++) w[i] = dv.getUint32(off + i * 4, false);
+    for (let i = 16; i < 64; i++) {
+      const s0 = (sha256Rotr(w[i-15], 7) ^ sha256Rotr(w[i-15], 18) ^ (w[i-15] >>> 3)) >>> 0;
+      const s1 = (sha256Rotr(w[i-2], 17) ^ sha256Rotr(w[i-2], 19) ^ (w[i-2] >>> 10)) >>> 0;
+      w[i] = (w[i-16] + s0 + w[i-7] + s1) >>> 0;
+    }
+    let [a, b, c, d, e, f, g, h] = H;
+    for (let i = 0; i < 64; i++) {
+      const S1 = (sha256Rotr(e, 6) ^ sha256Rotr(e, 11) ^ sha256Rotr(e, 25)) >>> 0;
+      const ch = ((e & f) ^ (~e & g)) >>> 0;
+      const t1 = (h + S1 + ch + K[i] + w[i]) >>> 0;
+      const S0 = (sha256Rotr(a, 2) ^ sha256Rotr(a, 13) ^ sha256Rotr(a, 22)) >>> 0;
+      const maj = ((a & b) ^ (a & c) ^ (b & c)) >>> 0;
+      const t2 = (S0 + maj) >>> 0;
+      h = g; g = f; f = e; e = (d + t1) >>> 0;
+      d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+    }
+    H = [(H[0]+a)>>>0, (H[1]+b)>>>0, (H[2]+c)>>>0, (H[3]+d)>>>0,
+         (H[4]+e)>>>0, (H[5]+f)>>>0, (H[6]+g)>>>0, (H[7]+h)>>>0];
+  }
+  return H.map(x => x.toString(16).padStart(8, "0")).join("");
+}
+function sha256Hex(bytes) {
+  // file:// 在 Chrome/Edge 下属于安全上下文，WebCrypto 可用；不可用时退回纯 JS
+  if (window.crypto && window.crypto.subtle && window.crypto.subtle.digest) {
+    return window.crypto.subtle.digest("SHA-256", bytes).then(buf => {
+      const b = new Uint8Array(buf);
+      let s = "";
+      for (let i = 0; i < b.length; i++) s += b[i].toString(16).padStart(2, "0");
+      return s;
+    }).catch(() => sha256HexJS(bytes));
+  }
+  return Promise.resolve(sha256HexJS(bytes));
+}
+
+/* ---------------- Lab / ΔE76（与脚本里修好的实现一致） ---------------- */
+const LAB_M = [[0.4124564, 0.3575761, 0.1804375],
+               [0.2126729, 0.7151522, 0.0721750],
+               [0.0193339, 0.1191920, 0.9503041]];
+const LAB_D65 = [0.95047, 1.0, 1.08883];
+function linToLab(r, g, b) {
+  const X = LAB_M[0][0]*r + LAB_M[0][1]*g + LAB_M[0][2]*b;   // 线性 RGB 直接乘矩阵
+  const Y = LAB_M[1][0]*r + LAB_M[1][1]*g + LAB_M[1][2]*b;
+  const Z = LAB_M[2][0]*r + LAB_M[2][1]*g + LAB_M[2][2]*b;
+  const d = 6 / 29, d3 = d * d * d;
+  const f = [X / LAB_D65[0], Y / LAB_D65[1], Z / LAB_D65[2]].map(v =>
+    v > d3 ? Math.cbrt(v) : v / (3 * d * d) + 4 / 29);
+  return [116 * f[1] - 16, 500 * (f[0] - f[1]), 200 * (f[1] - f[2])];
+}
+function deltaE76(a, b) {
+  const d0 = a[0] - b[0], d1 = a[1] - b[1], d2 = a[2] - b[2];
+  return Math.sqrt(d0*d0 + d1*d1 + d2*d2);
+}
+
+/* ---------------- 单通道拟合（与 lumina_profile_writer.py 同法） ----------------
+ * C(t) = E + (C0 - E)·exp(-k·t)，给定 k 时 E 线性可解，再对 k 粗搜 + 两级细搜。
+ * 约束 0 <= E <= 1（E 是线性反射率）。                                        */
+function fitChannelJS(yW, yB, c0w, c0b, t, kMax) {
+  kMax = kMax || 8.0;
+  const n = t.length;
+  const evaluation = (k) => {
+    let denom = 0, num = 0;
+    const dec = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      const d = Math.exp(-k * t[i]);
+      dec[i] = d;
+      const a = 1 - d;
+      denom += a * a;                       // 两基底各一次
+      num += a * (yW[i] - c0w * d) + a * (yB[i] - c0b * d);
+    }
+    denom *= 2;
+    if (denom <= 1e-14) return null;
+    let E = num / denom;
+    if (E < 0) E = 0; else if (E > 1) E = 1;
+    let sse = 0;
+    for (let i = 0; i < n; i++) {
+      const ew = E + (c0w - E) * dec[i] - yW[i];
+      const eb = E + (c0b - E) * dec[i] - yB[i];
+      sse += ew * ew + eb * eb;
+    }
+    return { E: E, k: k, rmse: Math.sqrt(sse / (2 * n)) };
+  };
+  const scan = (lo, hi, steps) => {
+    let best = null;
+    for (let i = 0; i < steps; i++) {
+      const k = lo + (hi - lo) * i / (steps - 1);
+      const r = evaluation(k);
+      if (r && (best === null || r.rmse < best.rmse - 1e-15)) best = r;
+    }
+    return best;
+  };
+  const coarseN = 4001;                     // 与脚本一致：k_steps // 100
+  let best = scan(1e-4, kMax, coarseN);
+  if (!best) return null;
+  let span = (kMax - 1e-4) / (coarseN - 1);
+  for (let lvl = 0; lvl < 2; lvl++) {
+    const lo = Math.max(1e-4, best.k - span);
+    const hi = Math.min(kMax, best.k + span);
+    if (hi <= lo) break;
+    const cand = scan(lo, hi, 2001);
+    if (cand && cand.rmse < best.rmse) best = cand;
+    span = (hi - lo) / 2000;
+  }
+  return best;
+}
+
+/* ---------------- 全通道拟合 ---------------- */
+function fitProfileJS(whiteLin, blackLin, t) {
+  const n = t.length;
+  const c0w = whiteLin[0].slice(), c0b = blackLin[0].slice();
+  const E = [], k = [], chRmse = [];
+  for (let c = 0; c < 3; c++) {
+    const yW = new Float64Array(n), yB = new Float64Array(n);
+    for (let i = 0; i < n; i++) { yW[i] = whiteLin[i][c]; yB[i] = blackLin[i][c]; }
+    const r = fitChannelJS(yW, yB, c0w[c], c0b[c], t);
+    if (!r) throw new Error("通道 " + "RGB"[c] + " 拟合失败");
+    E.push(r.E); k.push(r.k); chRmse.push(r.rmse);
+  }
+  let sse = 0, deSum = 0, deMax = 0, cnt = 0;
+  for (const [lin, base] of [[whiteLin, c0w], [blackLin, c0b]]) {
+    for (let i = 0; i < n; i++) {
+      const pred = [0, 0, 0];
+      for (let c = 0; c < 3; c++) {
+        pred[c] = E[c] + (base[c] - E[c]) * Math.exp(-k[c] * t[i]);
+        const d = pred[c] - lin[i][c];
+        sse += d * d; cnt++;
+      }
+      const de = deltaE76(linToLab(lin[i][0], lin[i][1], lin[i][2]),
+                          linToLab(pred[0], pred[1], pred[2]));
+      deSum += de; if (de > deMax) deMax = de;
+    }
+  }
+  return {
+    E: E, k: k, C0_white: c0w, C0_black: c0b,
+    channel_rmse: chRmse,
+    rmse_linear: Math.sqrt(sse / cnt),
+    mean_delta_e: deSum / n / 2,
+    max_delta_e: deMax,
+  };
+}
+
+/* ---------------- 产物构造（与脚本逐字段一致） ---------------- */
+const MAT_SPEC = {
+  grid_cols: 6, grid_rows: 3, block_mm: 10.0, gap_mm: 1.0, margin_mm: 1.0,
+  pixel_mm: 1.0, layer_height_mm: 0.08, base_mm: 1.0, max_step_layers: 25,
+  step_layers: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,25], shrink_xy_mm: 0.02,
+};
+function isoNow() { return new Date().toISOString(); }
+function jsonBytes(obj) {
+  return new TextEncoder().encode(JSON.stringify(obj, null, 2) + "\n");
+}
+const r6 = v => Math.round(v * 1e6) / 1e6;
+const to8 = v => Math.max(0, Math.min(255, Math.round(l2s(Math.max(0, Math.min(1, v))) * 255)));
+
+function buildStageAJS(name, fit, warns, materialDefault) {
+  const E = fit.E.map(r6), k = fit.k.map(r6);
+  const c0w = fit.C0_white.map(r6), c0b = fit.C0_black.map(r6);
+  const flags = [];
+  const c0avg = (fit.C0_white[0] + fit.C0_white[1] + fit.C0_white[2]) / 3;
+  if (c0avg < 0.60) flags.push("c0_white_avg_lt_0_60");
+  if (fit.mean_delta_e > 3.0) flags.push("mean_de_gt_3");
+  const run = {
+    index: 0, is_fresh: true,
+    bias_flag_count: flags.length, bias_flags: flags,
+    structural_flag_count: flags.length, structural_flags: flags,
+    white_c0_avg: c0avg,
+    image_source: "manual_measurement",
+    cross_val_rmse: null,
+  };
+  return {
+    param_type: "stage_A",
+    meta: {
+      schema_version: "1.0",
+      generated_at: isoNow(),
+      source: "lumina_gradient_card_extract",
+      workflow: "single-stage-kit",
+      warnings: warns,
+      image_source: "manual_measurement",
+      verification_count: 1,
+      aggregation_method: "refit_combined_samples",
+      selection: {
+        selected_indices: [0], excluded_runs: [],
+        selection_strategy: "bias_filter_v1",
+        run_scores: [run], fresh_index: 0,
+      },
+    },
+    parameters: {
+      channels: [{ channel_index: 0, color_name: name, E: E, k: k }],
+      substrates: [
+        { substrate_idx: 0, substrate_id: "white", display_name: "White", C0: c0w },
+        { substrate_idx: 1, substrate_id: "black", display_name: "Black", C0: c0b },
+      ],
+    },
+    fitted_substrates: { white: { C0: c0w }, black: { C0: c0b } },
+    validation: {
+      overall: {
+        mean_delta_e: fit.mean_delta_e,
+        max_delta_e: fit.max_delta_e,
+        rmse_linear: fit.rmse_linear,
+        channel_rmse: fit.channel_rmse.map(v => v),
+        best_run_mean_delta_e: fit.mean_delta_e,
+        verification_count: 1,
+        aggregation_method: "refit_combined_samples",
+        selected_run_count: 1,
+        selection_strategy: "bias_filter_v1",
+      },
+    },
+    source: {
+      spec: MAT_SPEC,
+      manifest: {
+        schema_version: "1.0",
+        workflow: "single-stage-kit",
+        material_default: materialDefault || "PLA Basic",
+        substrate_id: "white",
+        substrate_display_name: "White",
+      },
+    },
+  };
+}
+
+function matBoardSizePx(spec) {
+  const wMm = 2 * spec.margin_mm + spec.grid_cols * spec.block_mm + (spec.grid_cols - 1) * spec.gap_mm;
+  const hMm = 2 * spec.margin_mm + spec.grid_rows * spec.block_mm + (spec.grid_rows - 1) * spec.gap_mm;
+  return [Math.round(wMm * 20), Math.round(hMm * 20)];
+}
+function matSampleBoxes(spec) {
+  const boxes = [], size = 128;       // 官方：10mm 色块取中心 6.4mm（20px/mm × 6.4 = 128）
+  for (let r = 0; r < spec.grid_rows; r++) {
+    for (let c = 0; c < spec.grid_cols; c++) {
+      boxes.push({
+        row: r, col: c,
+        x: Math.round((spec.margin_mm + c * (spec.block_mm + spec.gap_mm) + 1.8) * 20),
+        y: Math.round((spec.margin_mm + r * (spec.block_mm + spec.gap_mm) + 1.8) * 20),
+        width: size, height: size,
+        thickness_layers: spec.step_layers[r * spec.grid_cols + c],
+      });
+    }
+  }
+  return boxes;
+}
+
+function buildMaterialJS(name, brand, fit, warns, stageA, spec) {
+  const wh = matBoardSizePx(spec);
+  return {
+    schema_version: "1.1",
+    kind: "lumina_stage_a_material",
+    material_name: name,
+    brand: brand,
+    stage_a_params_file: "stage_A_parameters.json",
+    created_at: isoNow(),
+    updated_at: isoNow(),
+    fit_summary: {
+      substrate_count: 2,
+      channel_count: 1,
+      substrates: ["black", "white"],
+      colors: [name],
+      overall_validation: stageA.validation.overall,
+      warnings: warns,
+    },
+    material_summary: {
+      sample_count: 36,
+      per_substrate_sample_count: 18,
+      grid_rows: spec.grid_rows,
+      grid_cols: spec.grid_cols,
+      layer_height_mm: spec.layer_height_mm,
+      warp_width_px: wh[0],
+      warp_height_px: wh[1],
+      thickness_layers: spec.step_layers.slice(),
+      sample_boxes: matSampleBoxes(spec),
+      white_zero_rgb: fit.C0_white.map(to8),
+      black_zero_rgb: fit.C0_black.map(to8),
+      estimated_rgb: fit.E.map(to8),
+      estimated_k: fit.k.map(r6),
+      verification_count: 1,
+      aggregation_method: "refit_combined_samples",
+      selected_run_count: 1,
+    },
+    source: { spec: spec, image_source: "manual_measurement" },
+    verification_count: 1,
+    verification_runs: [{
+      captured_at: isoNow(),
+      params: {
+        E: fit.E.map(r6), k: fit.k.map(r6),
+        white_C0: fit.C0_white.map(r6), black_C0: fit.C0_black.map(r6),
+      },
+      fit_summary: stageA.meta,
+      source: { spec: spec, image_source: "manual_measurement" },
+    }],
+    aggregation: {
+      method: "refit_combined_samples",
+      aggregated_at: isoNow(),
+      image_source: "manual_measurement",
+    },
+  };
+}
+
+function buildBundleJS(brand, name, matBytes, stageBytes, spec, sums) {
+  const contentHash = "sha256:" + sha256HexJS(concatBytes([matBytes, stageBytes]));
+  return {
+    schema_version: "2.0",
+    kind: "lumina_material_bundle",
+    exported_at: isoNow(),
+    material_count: 1,
+    packages: [{
+      material_id: "mat_" + sha256HexJS(new TextEncoder().encode(brand + "/" + name)).slice(0, 26),
+      revision_id: "rev_" + sha256HexJS(matBytes).slice(0, 26),
+      content_hash: contentHash,
+      channel: "manual",
+      visibility: "private",
+      local_directory: brand + "/" + name,
+      display: {
+        brand: brand, material_name: name,
+        estimated_rgb: sums.estimated_rgb,
+      },
+      files: [
+        { path: "materials/" + brand + "/" + name + "/material.json",
+          role: "material_archive", sha256: sha256HexJS(matBytes),
+          bytes: matBytes.length, required: true },
+        { path: "materials/" + brand + "/" + name + "/stage_A_parameters.json",
+          role: "stage_a_parameters", sha256: sha256HexJS(stageBytes),
+          bytes: stageBytes.length, required: true },
+      ],
+      compatibility: { min_app_version: "0.0.0", material_schema_version: "1.1" },
+    }],
+  };
+}
+function concatBytes(list) {
+  let n = 0;
+  for (const b of list) n += b.length;
+  const out = new Uint8Array(n);
+  let off = 0;
+  for (const b of list) { out.set(b, off); off += b.length; }
+  return out;
+}
+function buildExportJS(directory) {
+  return {
+    schema_version: "1.0",
+    kind: "lumina_material_export",
+    exported_at: isoNow(),
+    directory_names: [directory],
+    material_count: 1,
+  };
+}
+
+/* ---------------- 导出入口 ---------------- */
+async function exportMaterialZip() {
+  if (exporting) return;
+  const brandEl = document.getElementById("matBrand");
+  const nameEl = document.getElementById("matName");
+  const brand = (brandEl && brandEl.value || "").trim();
+  const name = (nameEl && nameEl.value || "").trim();
+  if (!brand || !name) {
+    showStatus("expInfo", "err", "请先填写<strong>品牌</strong>与<strong>耗材名称</strong>（会作为 Lumina 耗材库里的分组与名称）。");
+    return;
+  }
+  // 必须 18 个厚度全部实测（「默认基准」不算实测）
+  const order = canonOrderIdx();
+  const thickness = order.map(i => thicknessOf(canonIndexFor(i)));
+  const val = (sub, pos) => values[sub][pos];
+  const missing = [];
+  for (let k = 0; k < order.length; k++) {
+    for (const sub of ["white", "black"]) {
+      const pos = order[k];
+      if (!isMeasured(sub, pos)) missing.push(`${sub} ${thickness[k]}mm`);
+    }
+  }
+  if (missing.length) {
+    showStatus("expInfo", "err",
+      `还有 <strong>${missing.length}</strong> 个实测值没填（0 层默认基准不算实测），无法拟合。`
+      + `例如：<code>${missing.slice(0, 4).join("、")}</code>${missing.length > 4 ? " …" : ""}`);
+    return;
+  }
+  exporting = true;
+  try {
+    showStatus("expInfo", "", "正在拟合并打包…");
+    const linOf = x => isLinear()
+      ? Math.max(0, Math.min(1, x))
+      : s2l(Math.max(0, Math.min(255, x)) / 255);
+    const whiteLin = [], blackLin = [];
+    for (let k = 0; k < order.length; k++) {
+      const pos = order[k], vw = val("white", pos), vb = val("black", pos);
+      whiteLin.push([linOf(vw.r), linOf(vw.g), linOf(vw.b)]);
+      blackLin.push([linOf(vb.r), linOf(vb.g), linOf(vb.b)]);
+    }
+    const fit = fitProfileJS(whiteLin, blackLin, thickness);
+    const warns = sanity();
+    const stageA = buildStageAJS(name, fit, warns, "PLA Basic");
+    const mat = buildMaterialJS(name, brand, fit, warns, stageA, MAT_SPEC);
+    const matBytes = jsonBytes(mat);
+    const stageBytes = jsonBytes(stageA);
+    const bundle = buildBundleJS(brand, name, matBytes, stageBytes, MAT_SPEC, mat.material_summary);
+    const entries = [
+      { name: "lumina_material_export.json", data: jsonBytes(buildExportJS(brand + "/" + name)) },
+      { name: "lumina_material_bundle.json", data: jsonBytes(bundle) },
+      { name: `materials/${brand}/${name}/material.json`, data: matBytes },
+      { name: `materials/${brand}/${name}/stage_A_parameters.json`, data: stageBytes },
+    ];
+    const blob = zipStore(entries);
+    const fname = `lumina_materials_1_${stamp()}.zip`;
+    const how = await saveBlob(blob, fname);
+    if (how === "busy") return;
+    if (how === "cancel") { showStatus("expInfo", "warn", "已取消保存。"); return; }
+    const warnTail = warns.length
+      ? `　<strong>体检有 ${warns.length} 条提醒</strong>，建议先核对测量再导入。`
+      : "　体检通过。";
+    showStatus("expInfo", warns.length ? "warn" : "ok",
+      `已导出 <code>${fname}</code>（可直接导入 Lumina）。`
+      + `<br>E = [${fit.E.map(v => v.toFixed(4)).join(", ")}]　`
+      + `k = [${fit.k.map(v => v.toFixed(4)).join(", ")}]<br>`
+      + `平均 ΔE76 = ${fit.mean_delta_e.toFixed(2)}　rmse_linear = ${fit.rmse_linear.toFixed(4)}`
+      + warnTail
+      + `<br>导入：Lumina Studio → <strong>耗材管理</strong> → 耗材库 → <strong>导入耗材 ZIP</strong>`);
+  } catch (e) {
+    showStatus("expInfo", "err", "生成档案失败：" + ((e && e.message) || e));
+  } finally {
+    exporting = false;
+  }
+}
+
 function zipBytes(entries) {                 // entries: [{name, data:Uint8Array}] -> Uint8Array
   const parts = [], central = [];
   let offset = 0, total = 0;
@@ -1005,6 +1465,7 @@ document.getElementById("clearAll").addEventListener("click", () => {
 document.getElementById("expBoth").addEventListener("click", () => exportBoardsZip());
 document.getElementById("expWhite").addEventListener("click", () => exportBoards(["white"]));
 document.getElementById("expBlack").addEventListener("click", () => exportBoards(["black"]));
+document.getElementById("matZipOut").addEventListener("click", () => exportMaterialZip());
 document.getElementById("linInput").addEventListener("change", () => {
   const lin = isLinear();
   for (const sub of ["white","black"]) {

@@ -8,7 +8,7 @@ const fs = require("fs");
 
 const ROOT = path.join(__dirname, "..");
 const NODE_TESTS = [
-  "workshop_package_test.cjs",
+  "material_zip_test.cjs",
   "official_spec_test.cjs",
   "review2_fixes_test.cjs",
   "review_fixes_test.cjs",

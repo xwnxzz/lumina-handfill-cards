@@ -9,7 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Content: CC BY-NC-SA 4.0](https://img.shields.io/badge/Content-CC%20BY--NC--SA%204.0-lightgrey.svg)](CONTENT-LICENSE.md)
 [![Release](https://img.shields.io/github/v/release/xwnxzz/lumina-handfill-cards?label=release&color=blue)](https://github.com/xwnxzz/lumina-handfill-cards/releases/latest)
-[![Tests](https://img.shields.io/badge/tests-327%20passing-brightgreen.svg)](#测试)
+[![Tests](https://img.shields.io/badge/tests-305%20passing-brightgreen.svg)](#测试)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](#隐私)
 [![Offline](https://img.shields.io/badge/offline-100%25-brightgreen.svg)](#隐私)
 
@@ -55,38 +55,35 @@ PNG 里写的是 8-bit sRGB 数值，与你在网格里输入的一致。
 - 黑底板：层数越多应越亮（单调不减，由正向模型 `E ≥ C0` 决定）
 - 只有超出容差的反转才会提示；提示是**弱信号**，用于发现「色块 ↔ 厚度」对应填错
 
-## 两个版本
+## 导出可直接导入 Lumina 的耗材档案 ZIP
 
-| | 独立版 | 插件版 |
-|---|---|---|
-| 产物 | `lumina_singlestage_gui.html` | `xwnxzz.handfill-cards-<版本>.lumina-workshop` |
-| 导出 CSV / 板面图 PNG / ZIP | ✅ | ❌（沙箱禁止下载，按钮会隐藏并说明） |
-| 导入 CSV | ✅ | ✅ |
-| 把板面图交给 Lumina | — | ✅ 白底板 / 黑底板 / 校准板当前页 |
-| 主题 | 自带切换 | 跟随 Lumina |
-| 触发 Lumina 的梯度卡/LUT 提取 | — | ❌ 创意工坊 API 没有该通道（详见 [文档](docs/创意工坊模块.md)） |
+填完 36 格后，在「耗材档案」一栏填上**品牌**与**耗材名称**，点
+**「导出耗材档案 ZIP」** —— 工具会在**浏览器里**完成全部计算并打包：
 
-**推荐用法**：用独立版填数与出图（或插件版填数、交给 Lumina），
-把导出的白/黑底板图丢进 Lumina「耗材管理 → 梯度卡提取」——
-本工具的板面图按官方几何渲染（1340×680 px = 67×34 mm，色块中心与官方
-`sample_boxes` 逐像素重合），**读回来的就是你手填的数值，不用重新输入**。
+```
+lumina_material_export.json
+lumina_material_bundle.json
+materials/<品牌>/<耗材名称>/material.json            (kind=lumina_stage_a_material, schema 1.1)
+materials/<品牌>/<耗材名称>/stage_A_parameters.json  (param_type=stage_A)
+```
 
-## 创意工坊模块（Lumina Studio 2）
+**导入**：Lumina Studio → **耗材管理** → 耗材库 → **导入耗材 ZIP**
 
-本工具同时是 **Lumina Studio 创意工坊模块**，可在
-「创意工坊 → 安装本地模块包」选 `xwnxzz.handfill-cards-<版本>.lumina-workshop`，
-或用「从 GitHub Release 安装」填本仓库地址装入。
+包里就是 Stage A 拟合结果（每 RGB 通道一组 `E` / `k`、两个基底的 `C0`），
+字段与官方耗材档案一致，不需要装 Python，也不联网。
 
-- 打包：`node workshop/build.cjs` → `workshop/dist/`
-- 说明：[`docs/创意工坊模块.md`](docs/创意工坊模块.md)
-- 测试：`node tests/workshop_package_test.cjs`（86 项，含用假宿主按真实报文跑通握手与交接、内置宿主全套校验器、并验证「绝不悬挂」）
+> 拟合用的是与 `tools/lumina_profile_writer.py` **同一套算法**
+> （`C(t) = E + (C0 − E)·exp(−k·t)`，给定 k 时 E 线性可解，再对 k 粗搜 + 两级细搜），
+> 并已用官方导出包里的样本验证过：浏览器端算出的 `E`/`k` 与官方结果一致
+> （见 `tests/material_zip_test.cjs`）。
+> 顶部两个输出按钮「导出测量 CSV」「导出板面图」保持原样，三条导出互不影响。
 
-模块内除了原有全部功能，还会在右下角出现「把当前板面图交给 Lumina」按钮，
-把板面图连同物理尺寸与网格节距交给 Lumina 转换打印。
-只申请 `project.storage` 与 `handoff.image` 两项权限。
+## 本仓库只做独立版
 
-> 适配层是按官方公开协议**自行实现**的（官方 SDK 为 GPL-3.0，捆绑会让产物感染 GPL），
-> 因此模块产物仍是 MIT。若将来要按官方指南捆绑官方 SDK，见文档末尾的说明。
+本仓库只发布**独立版**：单个离线 HTML，在浏览器里直接打开即可用。
+（曾经尝试过的「Lumina Studio 创意工坊插件版」已从本仓库移除，
+计划另开仓库单独做；相关代码仍保留在本仓库的 git 历史里
+（`v1.1.0` ～ `v1.2.0`），需要时可以 `git show v1.2.0:workshop/shim.js` 取回。
 ## 功能
 
 ### 模式一：耗材管理 · 梯度卡填色（3 × 6 = 18 格单阶板）
@@ -207,7 +204,7 @@ tests/
 需要 Node.js。在仓库根目录执行：
 
 ```bash
-node tests/run_all.cjs           # 一次跑完全部（327 项 + Python 自检，单进程无弹窗），推荐
+node tests/run_all.cjs           # 一次跑完全部（305 项 + Python 自检，单进程无弹窗），推荐
 node tests/p0p1p2_test.cjs       # 通过 36，失败 0
 node tests/p0_test.cjs           # 通过 28，失败 0
 node tests/review_fixes_test.cjs # 通过 34，失败 0

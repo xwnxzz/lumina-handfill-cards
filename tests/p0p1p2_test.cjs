@@ -61,7 +61,11 @@ console.log("=== ① 文件名时间戳应为本地时间 ===");
   ok(got === want, "stamp() == 本地时间 " + want, got);
   ok(got.slice(0,8) === want.slice(0,8), "日期部分为本地日期（不再差一天）", got.slice(0,8));
   ok(html.includes("const ts = stamp();"), "两个 ZIP 文件名都用 stamp()");
-  ok(!/new Date\(\)\.toISOString/.test(html), "已无 new Date().toISOString() 调用（仅注释里提及）");
+  // 文件名时间戳必须用本地时间；但耗材档案里的 ISO 时间戳应当用 UTC ISO（官方 created_at 就是 UTC）
+  ok(!/function stamp\(\)[\s\S]{0,300}toISOString/.test(html),
+     "stamp()（文件名用）里没有 toISOString —— 文件名必须本地时间");
+  ok(/function isoNow\(\)\s*\{\s*return new Date\(\)\.toISOString\(\);/.test(html),
+     "isoNow()（档案时间戳用）用 UTC ISO —— 与官方 created_at 口径一致");
 }
 
 /* ===== ② 梯度卡持久化 ===== */
