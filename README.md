@@ -9,7 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Content: CC BY-NC-SA 4.0](https://img.shields.io/badge/Content-CC%20BY--NC--SA%204.0-lightgrey.svg)](CONTENT-LICENSE.md)
 [![Release](https://img.shields.io/github/v/release/xwnxzz/lumina-handfill-cards?label=release&color=blue)](https://github.com/xwnxzz/lumina-handfill-cards/releases/latest)
-[![Tests](https://img.shields.io/badge/tests-312%20passing-brightgreen.svg)](#测试)
+[![Tests](https://img.shields.io/badge/tests-315%20passing-brightgreen.svg)](#测试)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](#隐私)
 [![Offline](https://img.shields.io/badge/offline-100%25-brightgreen.svg)](#隐私)
 
@@ -63,7 +63,7 @@ PNG 里写的是 8-bit sRGB 数值，与你在网格里输入的一致。
 
 - 打包：`node workshop/build.cjs` → `workshop/dist/`
 - 说明：[`docs/创意工坊模块.md`](docs/创意工坊模块.md)
-- 测试：`node tests/workshop_package_test.cjs`（77 项，含用假宿主按真实报文跑通握手与交接）
+- 测试：`node tests/workshop_package_test.cjs`（80 项，含用假宿主按真实报文跑通握手与交接、并内置宿主全套校验器）
 
 模块内除了原有全部功能，还会在右下角出现「把当前板面图交给 Lumina」按钮，
 把板面图连同物理尺寸与网格节距交给 Lumina 转换打印。
@@ -191,7 +191,7 @@ tests/
 需要 Node.js。在仓库根目录执行：
 
 ```bash
-node tests/run_all.cjs           # 一次跑完全部（312 项 + Python 自检，单进程无弹窗），推荐
+node tests/run_all.cjs           # 一次跑完全部（315 项 + Python 自检，单进程无弹窗），推荐
 node tests/p0p1p2_test.cjs       # 通过 36，失败 0
 node tests/p0_test.cjs           # 通过 28，失败 0
 node tests/review_fixes_test.cjs # 通过 34，失败 0

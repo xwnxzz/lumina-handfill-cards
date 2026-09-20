@@ -61,6 +61,108 @@ function readZip(buf) {
   return out;
 }
 
+/* ======================================================================
+ * 宿主的 handoff 校验器 —— 规则逐条抄自 Lumina 2.0 真实前端 bundle
+ * （Lumina 由本机后端 http://127.0.0.1:8000/ 提供前端）。
+ * 关键：layout 的容差是 1e-6（几乎必须精确相等）：
+ *     recommendedWidthMm  === columns × pitchMm
+ *     recommendedHeightMm === rows    × pitchMm
+ * 这条曾经让真机交接失败（我们报 67mm，而 6 × 11 = 66mm）。
+ * ====================================================================== */
+const HOST_LIMITS = {
+  pngSignature: [137, 80, 78, 71, 13, 10, 26, 10],
+  maxPixels: 64e6,          // BGe
+  sizeMin: 0.5, sizeMax: 9999,   // M7 / E7
+  pitchMin: 0.01, pitchMax: 9999, // jGe / FGe
+  thickMin: 0.2, thickMax: 50,    // OGe / UGe
+  layoutTol: 1e-6,          // A7
+  recipeMax: 1024 * 1024,
+};
+function validateHandoffAsHost(p) {
+  const errs = [];
+  const inR = (v, lo, hi) => typeof v === "number" && Number.isFinite(v) && v >= lo && v <= hi;
+  const strOk = (v, max) => typeof v === "string" && v.length > 0 && v.length <= max && !v.includes("\0");
+  const isObj = v => typeof v === "object" && v !== null && !Array.isArray(v);
+
+  // XGe：PNG 头（签名 + IHDR）
+  if (!(p.pngBytes instanceof ArrayBuffer)) { errs.push("handoff-invalid-png: pngBytes 不是 ArrayBuffer"); return errs; }
+  const u8 = new Uint8Array(p.pngBytes);
+  if (u8.byteLength < 24) errs.push("handoff-invalid-png: 不足 24 字节");
+  else {
+    if (HOST_LIMITS.pngSignature.some((v, i) => u8[i] !== v)) errs.push("handoff-invalid-png: 签名");
+    if (new DataView(p.pngBytes, 8, 4).getUint32(0) !== 13) errs.push("handoff-invalid-png: IHDR 长度");
+    if (String.fromCharCode(...u8.slice(12, 16)) !== "IHDR") errs.push("handoff-invalid-png: 缺 IHDR");
+  }
+  const iw = u8.byteLength >= 24 ? new DataView(p.pngBytes, 16, 8).getUint32(0) : -1;
+  const ih = u8.byteLength >= 24 ? new DataView(p.pngBytes, 16, 8).getUint32(4) : -1;
+
+  // $Ge：像素尺寸必须与 PNG 的 IHDR 一致
+  if (!Number.isInteger(p.pixelWidth) || !Number.isInteger(p.pixelHeight) ||
+      p.pixelWidth < 1 || p.pixelHeight < 1 ||
+      p.pixelWidth * p.pixelHeight > HOST_LIMITS.maxPixels ||
+      iw !== p.pixelWidth || ih !== p.pixelHeight)
+    errs.push("handoff-dimensions-invalid");
+
+  // YGe：物理尺寸 / 总厚度 / layout 自洽
+  if (!inR(p.recommendedWidthMm, HOST_LIMITS.sizeMin, HOST_LIMITS.sizeMax) ||
+      !inR(p.recommendedHeightMm, HOST_LIMITS.sizeMin, HOST_LIMITS.sizeMax))
+    errs.push("handoff-physical-size-invalid");
+  if (p.recommendedTotalThicknessMm !== undefined &&
+      !inR(p.recommendedTotalThicknessMm, HOST_LIMITS.thickMin, HOST_LIMITS.thickMax))
+    errs.push("handoff-physical-size-invalid: 总厚度");
+  if (p.layout !== undefined) {
+    const e = p.layout;
+    if (e.kind !== "square-grid" || !Number.isInteger(e.rows) || !Number.isInteger(e.columns) ||
+        e.rows < 1 || e.columns < 1 ||
+        !inR(e.pitchMm, HOST_LIMITS.pitchMin, HOST_LIMITS.pitchMax))
+      errs.push("handoff-layout-invalid");
+    if (Math.abs(p.recommendedWidthMm - e.columns * e.pitchMm) > HOST_LIMITS.layoutTol ||
+        Math.abs(p.recommendedHeightMm - e.rows * e.pitchMm) > HOST_LIMITS.layoutTol)
+      errs.push("handoff-layout-invalid: 尺寸与行列×节距不自洽");
+  }
+
+  // ZGe：身份与配方信封
+  if (!strOk(p.moduleId, 128) || !strOk(p.moduleVersion, 128) || !strOk(p.projectId, 256) ||
+      p.preserveCanvasBounds !== true || !isObj(p.recipeSource) ||
+      p.recipeSource.manifestSchemaVersion !== 1 ||
+      p.recipeSource.moduleId !== p.moduleId ||
+      p.recipeSource.moduleVersion !== p.moduleVersion ||
+      !strOk(p.recipeSource.projectSchemaVersion, 128) ||
+      !strOk(p.recipeSource.renderSchemaVersion, 128) ||
+      !isObj(p.recipeSource.payload))
+    errs.push("handoff-recipe-invalid");
+  if (JSON.stringify(p.recipeSource).length > HOST_LIMITS.recipeMax) errs.push("handoff-recipe-too-large");
+
+  // QGe
+  if (!(p.colorLibraryId === null || strOk(p.colorLibraryId, 256))) errs.push("handoff-invalid-payload");
+  return errs;
+}
+
+/* 生成一张真实合法的 PNG（宿主会读 IHDR 并用 createImageBitmap 解码） */
+const CRC_T = (() => { const t = new Int32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c; } return t; })();
+function crc32(buf) { let c = 0xffffffff; for (let i = 0; i < buf.length; i++) c = CRC_T[(c ^ buf[i]) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; }
+function makePng(w, h, rgba = [255, 255, 255, 255]) {
+  const stride = w * 4 + 1;
+  const raw = Buffer.alloc(stride * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const o = y * stride + 1 + x * 4;
+    raw[o] = rgba[0]; raw[o + 1] = rgba[1]; raw[o + 2] = rgba[2]; raw[o + 3] = rgba[3];
+  }
+  const chunk = (type, data) => {
+    const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
+    const t = Buffer.from(type, "ascii");
+    const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(Buffer.concat([t, data])));
+    return Buffer.concat([len, t, data, crc]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 6;
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    chunk("IHDR", ihdr), chunk("IDAT", zlib.deflateSync(raw)), chunk("IEND", Buffer.alloc(0)),
+  ]);
+}
+
 const entries = readZip(fs.readFileSync(pkgPath));
 const names = entries.map(e => e.name);
 const byName = Object.fromEntries(entries.map(e => [e.name, e.data]));
@@ -294,9 +396,15 @@ console.log("\n=== 4) 协议仿真（假宿主）===");
         ok(documentElement.lang === "zh-CN", "响应里的状态也被应用", documentElement.lang);
 
         // ---- handoffCanvas：检查交接对象字段 ----
+        // 必须是真 PNG：宿主会读 IHDR 校验像素尺寸，还会用 createImageBitmap 解码
+        const pngBytes = makePng(1340, 680);
         const fakeCanvas = {
           width: 1340, height: 680,
-          toBlob: (cb) => cb({ arrayBuffer: () => Promise.resolve(new ArrayBuffer(64)) }),
+          toBlob: (cb) => cb({ arrayBuffer: () => {
+            const ab = new ArrayBuffer(pngBytes.length);
+            new Uint8Array(ab).set(pngBytes);
+            return Promise.resolve(ab);
+          } }),
         };
         bridge.handoffCanvas(fakeCanvas, {
           projectId: "gradient-white", widthMm: 67, heightMm: 34,
@@ -315,14 +423,48 @@ console.log("\n=== 4) 协议仿真（假宿主）===");
                  `${p.pixelWidth}x${p.pixelHeight}`);
               ok(p.recommendedWidthMm === 67 && p.recommendedHeightMm === 34, "交接带物理尺寸");
               ok(p.preserveCanvasBounds === true, "preserveCanvasBounds = true");
-              ok(p.layout && p.layout.kind === "square-grid" && p.layout.pitchMm === 11,
-                 "交接带方形网格布局（3x6 节距 11mm）", JSON.stringify(p.layout));
+              // 旧断言要求这里必须有 3x6 节距 11mm 的 layout —— 那正是真机失败的写法：
+              // 宿主规定 recommendedWidthMm === columns × pitchMm（容差 1e-6），
+              // 而板面带 1mm 边距（67mm）与 6×11=66mm 不符，会被判 handoff-layout-invalid。
+              // 正确做法是【不给 layout】（可选字段，省略即跳过该校验）。
+              ok(p.layout === undefined,
+                 "板面图刻意不带 layout（带边距，不符合宿主方形网格自洽规则）",
+                 JSON.stringify(p.layout));
               ok(p.recipeSource && p.recipeSource.manifestSchemaVersion === 1,
                  "交接带配方信封");
               ok(typeof p.recipeSource.projectSchemaVersion === "string",
                  "配方信封含 projectSchemaVersion");
               ok(JSON.stringify(p.recipeSource).length < 1024 * 1024,
                  "配方信封小于 1 MiB");
+              // ★ 按宿主真实规则整体校验（这条能抓住本次真机失败）
+              const errs = validateHandoffAsHost({
+                moduleId: p.moduleId, moduleVersion: p.moduleVersion, projectId: p.projectId,
+                pngBytes: p.pngBytes, pixelWidth: p.pixelWidth, pixelHeight: p.pixelHeight,
+                recommendedWidthMm: p.recommendedWidthMm,
+                recommendedHeightMm: p.recommendedHeightMm,
+                recommendedTotalThicknessMm: p.recommendedTotalThicknessMm,
+                preserveCanvasBounds: p.preserveCanvasBounds,
+                colorLibraryId: p.colorLibraryId, recipeSource: p.recipeSource,
+                layout: p.layout,
+              });
+              ok(errs.length === 0, "payload 通过宿主全套校验（含 layout 自洽）", JSON.stringify(errs));
+              // 板面带边距，不应给出 layout（给了就会因 6×11≠67 被宿主拒绝）
+              ok(p.layout === undefined || (
+                   Math.abs(p.recommendedWidthMm - p.layout.columns * p.layout.pitchMm) < 1e-6 &&
+                   Math.abs(p.recommendedHeightMm - p.layout.rows * p.layout.pitchMm) < 1e-6),
+                 "layout 要么不给，要么与物理尺寸精确自洽", JSON.stringify(p.layout));
+              // 反例：校验器本身必须能抓出「67mm + 6×11 节距」这种不自洽
+              const bad = validateHandoffAsHost({
+                moduleId: "a.b", moduleVersion: "1.0.0", projectId: "p",
+                pngBytes: pngBytes.buffer.slice(0), pixelWidth: 1340, pixelHeight: 680,
+                recommendedWidthMm: 67, recommendedHeightMm: 34,
+                preserveCanvasBounds: true, colorLibraryId: null,
+                recipeSource: { manifestSchemaVersion: 1, moduleId: "a.b", moduleVersion: "1.0.0",
+                                projectSchemaVersion: "x/v1", renderSchemaVersion: "y/v1", payload: {} },
+                layout: { kind: "square-grid", rows: 3, columns: 6, pitchMm: 11 },
+              });
+              ok(bad.some(e => e.startsWith("handoff-layout-invalid")),
+                 "校验器能抓出 layout 与尺寸不自洽（67 ≠ 6×11）", JSON.stringify(bad));
             }
             console.log(`\n通过 ${pass}，失败 ${fail}`);
             process.exit(fail ? 1 : 0);

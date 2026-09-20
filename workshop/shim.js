@@ -257,7 +257,6 @@
         recommendedWidthMm: meta.widthMm,
         recommendedHeightMm: meta.heightMm,
         preserveCanvasBounds: true,
-        layout: meta.layout,
         colorLibraryId: null,
         recipeSource: {
           manifestSchemaVersion: 1,
@@ -269,6 +268,20 @@
         },
       };
       if (meta.totalThicknessMm) payload.recommendedTotalThicknessMm = meta.totalThicknessMm;
+      // 宿主对 layout 的校验是【精确相等】（容差 1e-6）：
+      //     recommendedWidthMm === columns × pitchMm
+      //     recommendedHeightMm === rows × pitchMm
+      // 而本工具的板面图带边距（梯度卡两侧各 1mm、校准板四周各 5mm），
+      // 天生不满足该规则。layout 是可选字段，省略即跳过校验；
+      // 宿主也没有把 layout 传给转换器（只传 targetWidthMm/HeightMm）。
+      // 这里加守卫：只有真满足规则时才带上，绝不谎报尺寸去凑。
+      var L = meta.layout;
+      if (L && typeof L.columns === "number" && typeof L.rows === "number" &&
+          typeof L.pitchMm === "number" &&
+          Math.abs(L.columns * L.pitchMm - meta.widthMm) < 1e-6 &&
+          Math.abs(L.rows * L.pitchMm - meta.heightMm) < 1e-6) {
+        payload.layout = L;
+      }
       return client.handoff.image(payload, [buf]);
     });
   }
@@ -346,7 +359,7 @@
           projectId: "cal-" + mode.key + "-" + (typeof cal !== "undefined" && cal.page ? cal.page : 0),
           widthMm: sideMm,
           heightMm: sideMm,
-          layout: { kind: "square-grid", rows: total, columns: total, pitchMm: mode.block + mode.gap },
+          // 同梯度卡：带 5mm 边距，不满足宿主的 layout 自洽规则，故不给。
         },
       };
     }
@@ -360,7 +373,8 @@
         widthMm: 67,
         heightMm: 34,
         totalThicknessMm: 1.0 + 25 * 0.08,
-        layout: { kind: "square-grid", rows: 3, columns: 6, pitchMm: 11 },
+        // 刻意不给 layout：宿主要求画布尺寸 === 行列 × 节距（精确相等），
+        // 而本板面带 1mm 边距（67 x 34 已是官方实测值），不满足该规则。
       },
     };
   }
