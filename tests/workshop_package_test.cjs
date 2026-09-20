@@ -174,9 +174,10 @@ console.log("\n=== 4) 协议仿真（假宿主）===");
     getAttribute: (k) => attrs[k],
   };
   const made = [];
+  const themeBtn = { style: {} };          // 工具自带的主题按钮，宿主模式应被隐藏
   const fakeDocument = {
     documentElement,
-    getElementById: () => null,
+    getElementById: (id) => (id === "themeBtn" ? themeBtn : null),
     createElement: (tag) => {
       const n = { tagName: tag, style: {}, dataset: {}, children: [],
                   setAttribute(k, v) { this[k] = v; }, addEventListener(t, f) { (this._h ||= {})[t] = f; },
@@ -225,12 +226,17 @@ console.log("\n=== 4) 协议仿真（假宿主）===");
   });
   port1.start();
 
+  // ★ 真实宿主（Lumina 2.0 前端）是这样发的：端口通过 transfer list 转交，
+  //   接收端必须读 MessageEvent.ports —— 早期版本误读 event.data.ports，
+  //   导致 connect 被丢弃、永远停在「正在等待模块就绪」。
+  //   这个 fixture 之前照着错误实现写，所以没抓到；现在按真实报文形状写。
   listeners.forEach(fn => fn({
     source: parentObj,
-    data: { type: "lumina.workshop.connect", sessionId: "session-test", ports: [port2] },
+    data: { type: "lumina.workshop.connect", sessionId: "session-test" },
+    ports: [port2],
   }));
-  ok(bridge.inHost === true, "收到 connect 后 inHost = true");
-  ok(bridge.client !== null, "建立 RPC 客户端");
+  ok(bridge.inHost === true, "收到 connect 后 inHost = true（端口在 event.ports 上）");
+  ok(bridge.client !== null, "建立 RPC 客户端（读 event.ports[0]）");
 
   // ---- 模块应当发出 ui.getState 与 lifecycle.ready ----
   const wait = (ms) => new Promise(r => setTimeout(r, ms));
@@ -251,7 +257,12 @@ console.log("\n=== 4) 协议仿真（假宿主）===");
       protocol: "lumina-workshop-rpc", version: 1, kind: "event",
       event: "ui.stateChanged",
       payload: { locale: "en-US", theme: "dark",
-                 tokens: { "--lumina-accent": "#ff8800", "--bad-token": "x" } },
+                 tokens: { "--lumina-accent": "#ff8800",
+                           "--lumina-surface": "#111827",
+                           "--lumina-surface-muted": "#1f2937",
+                           "--lumina-text": "#f8fafc",
+                           "--lumina-border": "#374151",
+                           "--bad-token": "x" } },
     });
     setTimeout(() => {
       ok(documentElement.lang === "en-US", "应用了宿主语言", documentElement.lang);
@@ -260,6 +271,17 @@ console.log("\n=== 4) 协议仿真（假宿主）===");
       ok(rootStyle.get("--lumina-accent") === "#ff8800", "写入了 --lumina-accent 令牌");
       ok(rootStyle.get("--acc") === "#ff8800", "令牌映射到工具的 --acc");
       ok(!rootStyle.has("--bad-token"), "非法令牌被忽略");
+      // 宿主发布的真实令牌名 → 工具变量
+      ok(rootStyle.get("--panel2") === "#1f2937",
+         "--lumina-surface-muted → --panel2", rootStyle.get("--panel2"));
+      ok(rootStyle.get("--line") === "#374151", "--lumina-border → --line", rootStyle.get("--line"));
+      ok(rootStyle.get("--panel") === "#111827", "--lumina-surface → --panel", rootStyle.get("--panel"));
+      ok(rootStyle.get("--tx") === "#f8fafc", "--lumina-text → --tx", rootStyle.get("--tx"));
+      // 主题交给 Lumina：工具自带的切换按钮必须被隐藏
+      ok(themeBtn.style.display === "none", "宿主模式下隐藏工具自带的主题按钮",
+         themeBtn.style.display);
+      // 宿主在 iframe onLoad 前会忽略 ready，所以模块必须重发
+      ok(bridge.readySent >= 1, "至少发过一次 ready", bridge.readySent);
 
       // ---- 回 ui.getState 的响应，检查响应处理与超时表 ----
       const getState = fromModule.find(x => x.method === "ui.getState");

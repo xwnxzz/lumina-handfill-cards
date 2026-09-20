@@ -6,14 +6,21 @@
  *   (B) Lumina Studio 创意工坊的沙箱 iframe 里：走公开的 Workshop 协议
  *
  * 协议依据：官方公开仓库 lumina-layer-studio/Lumina-Workshop-SDK 的
- *   src/contracts.ts（类型契约）与 docs/module-development.md（开发指南）。
- *   本文件是【按公开协议自行实现】的最小客户端，**没有复制 SDK 源码**
- *   （官方 SDK 为 GPL-3.0-or-later，复制会让本模块感染 GPL）。
+ *   src/contracts.ts 与 docs/module-development.md，并对照真实宿主（Lumina 2.0
+ *   前端 bundle）的实际实现校正过下列细节：
+ *     - 宿主在 iframe onLoad 时才「武装」握手（此前收到的 ready 一律忽略）
+ *       => 本模块必须【周期性重发 ready】，只发一次会超时失败
+ *     - 转交的 MessagePort 在 MessageEvent.ports 上，不在 event.data.ports 上
+ *       （官方 SDK 用 event.ports[0]）
+ *     - 宿主校验 apiVersion === "1.0.0"；忽略未知事件名
+ *     - 宿主发布的主题令牌只有：--lumina-surface / --lumina-surface-muted /
+ *       --lumina-text / --lumina-text-muted / --lumina-accent / --lumina-border
+ *     - iframe 为 sandbox="allow-scripts"（不透明源，localStorage 会抛错）
+ *       CSP 为 default-src 'none' + script-src/style-src 'unsafe-inline'
+ *       + img-src data: blob:（所以不能有任何外部资源）
  *
- * 沙箱差异（官方指南明确）：
- *   - 模块运行在 sandbox="allow-scripts" 的 iframe 中 → localStorage 会抛 SecurityError
- *   - 宿主拦截网络、跳转、弹窗、下载 → 保存/导出必须走宿主 RPC
- *   因此：宿主内禁用本地下载路径，改用 handoff.image 与 project.storage。
+ * 本文件是【按公开协议自行实现】的最小客户端，**没有复制 SDK 源码**
+ * （官方 SDK 为 GPL-3.0-or-later，复制会让本模块感染 GPL）。
  * ========================================================================== */
 (function () {
   "use strict";
@@ -23,14 +30,15 @@
   var API_VERSION = "1.0.0";
 
   // 官方默认超时（毫秒）
-  var T_HS = 10000, T_REQ = 30000, T_HANDOFF = 120000;
+  var T_REQ = 30000, T_HANDOFF = 120000, T_PICK = 300000;
+  var READY_RETRY_MS = 800, READY_RETRY_MAX = 25;   // 覆盖宿主 onLoad 前的忽略窗口
 
-  // 独立浏览器：window.parent === window，直接什么都不做
   var maybeHost = (window.parent && window.parent !== window);
   var bridge = {
     inHost: false,
     client: null,
     state: { locale: "zh-CN", theme: "light", tokens: {} },
+    readySent: 0,
   };
   window.LuminaWorkshop = bridge;
 
@@ -69,7 +77,6 @@
       opts = opts || {};
       if (closed) return Promise.reject(new Error("连接已关闭"));
       var requestId = "req-" + (++seq);
-      var timeoutMs = opts.timeoutMs || T_REQ;
       return new Promise(function (resolve, reject) {
         var timer = setTimeout(function () {
           delete pending[requestId];
@@ -77,7 +84,7 @@
           e.code = "REQUEST_TIMEOUT";
           e.retryable = true;
           reject(e);
-        }, timeoutMs);
+        }, opts.timeoutMs || T_REQ);
         pending[requestId] = { resolve: resolve, reject: reject, timer: timer };
         port.postMessage(
           {
@@ -99,7 +106,7 @@
       ready: function () { return call("lifecycle.ready", {}); },
       image: {
         pick: function (payload, transfer) {
-          return call("image.pick", payload || {}, { transfer: transfer, timeoutMs: 300000 });
+          return call("image.pick", payload || {}, { transfer: transfer, timeoutMs: T_PICK });
         },
       },
       colorLibrary: { read: function () { return call("colorLibrary.read", {}); } },
@@ -124,15 +131,15 @@
   }
 
   /* ------------------------------------------------------------ UI 状态应用 */
-  // 官方 host 只推送 --lumina-* 令牌；这里把它映射到本工具自己的 CSS 变量。
+  // 宿主实际只发布这 6 个颜色令牌（名字已对照真实前端 bundle 核实），
+  // 逐个映射到本工具自己的 CSS 变量。
   var TOKEN_MAP = {
-    "--lumina-bg": "--bg",
-    "--lumina-surface": "--panel",
-    "--lumina-surface-well": "--panel2",
-    "--lumina-line": "--line",
-    "--lumina-text": "--tx",
-    "--lumina-text-muted": "--tx2",
-    "--lumina-accent": "--acc",
+    "--lumina-surface":       ["--surface-card", "--panel", "--field"],
+    "--lumina-surface-muted": ["--surface-well", "--panel2", "--bg", "--header-bg"],
+    "--lumina-text":          ["--tx"],
+    "--lumina-text-muted":    ["--surface-text-muted", "--tx2"],
+    "--lumina-accent":        ["--acc", "--acc2"],
+    "--lumina-border":        ["--line", "--surface-card-outline"],
   };
   function applyUiState(state) {
     if (!state || typeof state !== "object") return;
@@ -140,51 +147,68 @@
     var root = document.documentElement;
     if (state.locale) root.lang = state.locale;
     if (state.theme) root.dataset.theme = state.theme;
-    var tokens = state.tokens || {};
-    Object.keys(tokens).forEach(function (name) {
-      if (!/^--lumina-[a-z0-9-]+$/.test(name)) return;
-      root.style.setProperty(name, tokens[name]);
-      var mapped = TOKEN_MAP[name];
-      if (mapped) root.style.setProperty(mapped, tokens[name]);
-    });
-    // 宿主深色主题 → 本工具用 .dark 类
     if (state.theme === "dark") root.classList.add("dark");
     else if (state.theme === "light") root.classList.remove("dark");
+    var tokens = state.tokens || {};
+    Object.keys(tokens).forEach(function (name) {
+      if (!/^--lumina-[a-z0-9-]+$/.test(name)) return;   // 官方要求：非法令牌忽略
+      var v = tokens[name];
+      if (typeof v !== "string") return;
+      root.style.setProperty(name, v);
+      (TOKEN_MAP[name] || []).forEach(function (t) { root.style.setProperty(t, v); });
+    });
+    hideOwnThemeButton();     // 主题交给 Lumina，隐藏工具自带的切换按钮
   }
 
   /* -------------------------------------------------------------- 握手 */
-  var hsTimer = setTimeout(function () {
-    bridge.handshake = "timeout";
-    window.removeEventListener("message", onConnect);
-  }, T_HS);
+  var retryTimer = null, retryCount = 0;
+
+  function sendReady() {
+    try {
+      window.parent.postMessage(
+        {
+          type: "lumina.workshop.ready",
+          moduleId: MODULE_ID,
+          moduleVersion: MODULE_VERSION,
+          apiVersion: API_VERSION,
+          events: ["ui.stateChanged"],
+        },
+        "*"
+      );
+      bridge.readySent++;
+    } catch (e) {
+      bridge.handshake = "send-failed";
+    }
+  }
 
   function onConnect(ev) {
-    if (ev.source !== window.parent) return;
+    // 宿主从父窗口发来；嵌套场景下也可能是顶层窗口
+    if (ev.source !== window.parent && ev.source !== window.top) return;
     var d = ev.data;
     if (!d || d.type !== "lumina.workshop.connect") return;
-    if (!d.ports || !d.ports[0]) return;
-    clearTimeout(hsTimer);
+    // ★ 转交的端口在 ev.ports 上（官方 SDK 用 event.ports[0]）；
+    //   早期版本误写成 ev.data.ports，导致 connect 被丢弃、永远停在「等待模块就绪」。
+    var port = (ev.ports && ev.ports.length) ? ev.ports[0]
+             : (d.ports && d.ports.length) ? d.ports[0] : null;
+    if (!port) return;
+    if (retryTimer) { clearInterval(retryTimer); retryTimer = null; }
     window.removeEventListener("message", onConnect);
     bridge.inHost = true;
     bridge.handshake = "connected";
-    bridge.client = makeClient(d.sessionId, d.ports[0]);
+    bridge.client = makeClient(d.sessionId, port);
     startHostMode();
   }
   window.addEventListener("message", onConnect);
-  try {
-    window.parent.postMessage(
-      {
-        type: "lumina.workshop.ready",
-        moduleId: MODULE_ID,
-        moduleVersion: MODULE_VERSION,
-        apiVersion: API_VERSION,
-        events: ["ui.stateChanged"],
-      },
-      "*"
-    );
-  } catch (e) {
-    bridge.handshake = "send-failed";
-  }
+
+  // 宿主在 iframe onLoad 之前会忽略 ready，所以周期重发，直到连上为止
+  sendReady();
+  retryTimer = setInterval(function () {
+    if (bridge.inHost || ++retryCount > READY_RETRY_MAX) {
+      clearInterval(retryTimer); retryTimer = null;
+      return;
+    }
+    sendReady();
+  }, READY_RETRY_MS);
 
   /* -------------------------------------------------------- 宿主模式装配 */
   function canvasToPng(canvas) {
@@ -198,21 +222,27 @@
   }
 
   function firstError(e) {
-    var msg = (e && e.message) || "未知错误";
     // 官方要求：用户可见消息不得含堆栈/路径/令牌
+    var msg = (e && e.message) || "未知错误";
     return String(msg).replace(/[\r\n]+/g, " ").slice(0, 200);
   }
 
-  // 官方握手成功后由模块主动报告就绪
   function startHostMode() {
-    bridge.client.ui &&
-      bridge.client.ui.getState &&
+    if (bridge.client.ui && bridge.client.ui.getState) {
       bridge.client.ui.getState().then(function (s) { applyUiState(s); }, function () {});
+    }
+    // 官方：握手完成后模块必须主动报就绪，宿主才会把状态切到「运行中」
     bridge.client.ready().catch(function () {});
+    hideOwnThemeButton();
     injectHostUi();
   }
 
-  // 板面图 → 交接给 Lumina。物理尺寸与网格节距都取自工具的实测规格。
+  // 主题由 Lumina 控制：宿主里隐藏工具自带的「浅色/深色」按钮
+  function hideOwnThemeButton() {
+    var b = document.getElementById("themeBtn");
+    if (b) b.style.display = "none";
+  }
+
   function handoffCanvas(canvas, meta) {
     var client = bridge.client;
     if (!client) return Promise.reject(new Error("不在 Lumina 宿主中"));
@@ -248,10 +278,7 @@
   /* ------------------------------------------------- 宿主内的工具条与提示 */
   function el(tag, attrs, text) {
     var n = document.createElement(tag);
-    Object.keys(attrs || {}).forEach(function (k) {
-      if (k === "style") n.setAttribute("style", attrs[k]);
-      else n.setAttribute(k, attrs[k]);
-    });
+    Object.keys(attrs || {}).forEach(function (k) { n.setAttribute(k, attrs[k]); });
     if (text) n.textContent = text;
     return n;
   }
@@ -264,18 +291,16 @@
         "position:fixed;right:14px;bottom:14px;z-index:9999;display:flex;gap:8px;align-items:center;" +
         "padding:8px 10px;border-radius:10px;font:12px/1.5 system-ui,sans-serif;" +
         "background:var(--lumina-surface,#fff);color:var(--lumina-text,#0f172a);" +
-        "border:1px solid var(--lumina-line,#e2e8f0);box-shadow:0 6px 24px rgba(15,23,42,.18)",
+        "border:1px solid var(--lumina-border,#e2e8f0);box-shadow:0 6px 24px rgba(15,23,42,.18)",
     });
-    bar.appendChild(el("span", { style: "opacity:.7" }, "Lumina 创意工坊"));
-
     var btn = el("button", {
       type: "button",
       style:
-        "padding:5px 10px;border-radius:7px;border:1px solid var(--lumina-line,#cbd5e1);" +
-        "background:var(--lumina-accent,#2563eb);color:#fff;cursor:pointer;font:inherit",
+        "padding:5px 10px;border-radius:7px;border:1px solid var(--lumina-border,#cbd5e1);" +
+        "background:var(--lumina-accent,#0071e3);color:#fff;cursor:pointer;font:inherit",
     }, "把当前板面图交给 Lumina");
-
     var msg = el("span", { style: "min-width:8em;opacity:.8" }, "");
+
     btn.addEventListener("click", function () {
       var target = pickCurrentBoard();
       if (!target) { msg.textContent = "没有可交接的板面图"; return; }
@@ -284,12 +309,8 @@
       handoffCanvas(target.canvas, target.meta).then(
         function (res) {
           btn.disabled = false;
-          // 官方：转换器已有工作时第一次交接返回 needs-confirmation
-          if (res && res.status === "needs-confirmation") {
-            msg.textContent = "已在 Lumina 打开替换确认";
-          } else {
-            msg.textContent = "已交给 Lumina 转换 ✓";
-          }
+          if (res && res.status === "needs-confirmation") msg.textContent = "已在 Lumina 打开替换确认";
+          else msg.textContent = "已交给 Lumina 转换 ✓";
         },
         function (e) {
           btn.disabled = false;
@@ -304,7 +325,6 @@
   }
 
   // 当前该交接哪张图：按工具当前的模式与页面决定。
-  // 几何全部取自工具自身的规格与官方公开代码，不在这里另设常数：
   //   梯度卡：67 x 34 mm，3 行 x 6 列，节距 11 mm（block 10 + gap 1）
   //   校准板：官方 calibration.py 中所有板都用 margin = 5.0、block = 5.0、gap = 0.8
   var CAL_MARGIN_MM = 5.0;
@@ -326,16 +346,10 @@
           projectId: "cal-" + mode.key + "-" + (typeof cal !== "undefined" && cal.page ? cal.page : 0),
           widthMm: sideMm,
           heightMm: sideMm,
-          layout: {
-            kind: "square-grid",
-            rows: total,
-            columns: total,
-            pitchMm: mode.block + mode.gap,
-          },
+          layout: { kind: "square-grid", rows: total, columns: total, pitchMm: mode.block + mode.gap },
         },
       };
     }
-    // 梯度卡：优先交接有数据的那块板；两块都有数据时先交白底板
     var pick = (w && w.width) ? w : ((b && b.width) ? b : null);
     if (!pick) return null;
     var sub = pick.id === "prevWhite" ? "white" : "black";
