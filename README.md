@@ -122,6 +122,23 @@ materials/<品牌>/<耗材名称>/stage_A_parameters.json  (param_type=stage_A)
 
 ## 快速开始
 
+### 方式一：一键启动（推荐）
+
+双击 **`一键启动_手填色卡.cmd`** 即可。它会：
+
+1. 找到 `lumina_singlestage_gui.html`（先看自己所在目录，再找几个常见位置）
+2. 解除 Windows 给下载文件打的「来自 Internet」锁定标记（`Unblock-File`），
+   省掉下面「导出文件被拦」那节的手工操作
+3. 用默认浏览器打开
+
+不需要安装任何东西，也不会弹一堆窗口。**请把 `.cmd` 和 `lumina_singlestage_gui.html`
+放在同一个文件夹**（从 Release 下载时两个都下）。
+
+> `一键启动_手填色卡.ps1` 是同一个脚本的可读源码，方便你查看或改动。
+> 想直接运行它请用「右键 → 使用 PowerShell 运行」，双击默认只会用记事本打开。
+
+### 方式二：手动打开
+
 1. 双击 `lumina_singlestage_gui.html`，用 Edge / Chrome 打开
 2. 选择上方两个模式之一
 3. 按网格上标出的层数 / 序号填入 RGB
@@ -177,6 +194,8 @@ LICENSE                       代码许可（MIT）
 CONTENT-LICENSE.md            内容许可（CC BY-NC-SA 4.0）
 NOTICE.md                     第三方来源、逐篇署名与 AI 辅助说明
 lumina_singlestage_gui.html   主工具（单文件，离线）
+一键启动_手填色卡.cmd          一键启动：找主工具 → 解除锁定 → 打开浏览器
+一键启动_手填色卡.ps1          同一个脚本的可读源码（带注释）
 tools/
   lumina_profile_writer.py    离线拟合脚本
 docs/
