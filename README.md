@@ -124,14 +124,13 @@ materials/<品牌>/<耗材名称>/stage_A_parameters.json  (param_type=stage_A)
 
 ### 方式一：一键启动（推荐）
 
-从 Release 下载 **`start-handfill-cards.zip`**（页面显示名「一键启动包_解压即用.zip」），
-解压后双击 **`一键启动_手填色卡.cmd`** 即可。压缩包是扁平的，解压出来就是：
+从 Release 下载 **`lumina-handfill-cards-v1.4.0.zip`**，解压后双击
+**`一键启动_手填色卡.cmd`** 即可。解压出来的根目录里就有：
 
 ```
-手填色卡.html              主工具（zip 里的友好名）
+手填色卡.html              主工具（Release 包里的名字）
 一键启动_手填色卡.cmd       双击这个
 一键启动_手填色卡.ps1       脚本的可读源码
-使用说明.txt
 ```
 
 启动器会：
@@ -147,8 +146,9 @@ materials/<品牌>/<耗材名称>/stage_A_parameters.json  (param_type=stage_A)
 > **启动器和主工具 HTML 必须在同一个文件夹里。**
 > 启动器按「自己所在目录」去找主工具，所以**两个文件改成任何名字都照常工作**。
 
-> 仓库里主工具的文件名是 `lumina_singlestage_gui.html`（测试与文档都引用这个原名，
-> 不能改），只有 Release 的「一键启动包」里才改名成 `手填色卡.html`。
+> **关于文件名**：仓库里主工具叫 `lumina_singlestage_gui.html`（测试与文档共 9 处引用
+> 这个原名，不能改）；**Release 打的包里**统一改名成 `手填色卡.html`。
+> 源码里那份 `lumina_singlestage_gui.html` 依然在包内可用，改名只影响打包结果。
 
 > `一键启动_手填色卡.ps1` 是同一个脚本的可读源码，方便你查看或改动。
 > 想直接运行它请用「右键 → 使用 PowerShell 运行」，双击默认只会用记事本打开。
@@ -209,7 +209,7 @@ assets/
 LICENSE                       代码许可（MIT）
 CONTENT-LICENSE.md            内容许可（CC BY-NC-SA 4.0）
 NOTICE.md                     第三方来源、逐篇署名与 AI 辅助说明
-lumina_singlestage_gui.html   主工具（单文件，离线；Release 的启动包里改名为 手填色卡.html）
+lumina_singlestage_gui.html   主工具（单文件，离线；Release 打的包里改名为 手填色卡.html）
 一键启动_手填色卡.cmd          一键启动：找主工具（两个名字都认）→ 解除锁定 → 打开浏览器
 一键启动_手填色卡.ps1          同一个脚本的可读源码（带注释）
 tools/
